@@ -86,20 +86,38 @@ public class Calibrator_new implements EventListener {
         hapticsClient.disconnect();
 
         // Geomagicの変換行列を生成
+        // 位置座標系
         Matrix geo_euc = Matrix.create(new double[][]{
                 { points.get(0).x, points.get(1).x, points.get(2).x, points.get(3).x },
                 { points.get(0).y, points.get(1).y, points.get(2).y, points.get(3).y },
                 { points.get(0).z, points.get(1).z, points.get(2).z, points.get(3).z },
                 {             1.0,             1.0,             1.0,             1.0 }
         });
+        // 上記でずれる場合
+//        Matrix geo_euc = Matrix.create(new double[][]{
+//                { points.get(0).x, points.get(0).x, points.get(0).x+100, points.get(0).x },
+//                { points.get(0).y, points.get(0).y, points.get(0).y, points.get(0).y+200 },
+//                { points.get(0).z, points.get(0).z+70, points.get(0).z, points.get(0).z },
+//                {             1.0,             1.0,             1.0,             1.0 }
+//        });
 
+        // ベクトル座標系
         Matrix geo_vec = Matrix.create(new double[][]{
                 { points.get(1).x - points.get(0).x, points.get(2).x - points.get(0).x, points.get(3).x - points.get(0).x },
                 { points.get(1).y - points.get(0).y, points.get(2).y - points.get(0).y, points.get(3).y - points.get(0).y },
                 { points.get(1).z - points.get(0).z, points.get(2).z - points.get(0).z, points.get(3).z - points.get(0).z },
         });
-        
+        // 上記でずれる場合
+//        Matrix geo_vec = Matrix.create(new double[][]{
+//                { points.get(0).x - points.get(0).x, points.get(0).x+100 - points.get(0).x, points.get(0).x - points.get(0).x },
+//                { points.get(0).y - points.get(0).y, points.get(0).y - points.get(0).y, points.get(0).y+200 - points.get(0).y },
+//                { points.get(0).z+70 - points.get(0).z, points.get(0).z - points.get(0).z, points.get(0).z - points.get(0).z },
+//        });
+
+        // Geomagic -> World 位置座標変換行列生成
         Matrix M_geo2world_euc = world_euc.product(geo_euc.solve(Matrix.identity(4)));
+
+        // World -> Geomagic ベクトル座標変換行列生成
         Matrix M_world2geo_vec = Matrix.create(new double[][]{
                 {0.001,0.0,0.0},
                 {0.0,0.001,0.0},
@@ -155,19 +173,22 @@ public class Calibrator_new implements EventListener {
         libertyClient.disconnect();
 
         // Libertyの変換行列を生成
-//        Matrix lib_euc = Matrix.create(new double[][]{
-//                { points.get(0).x, points.get(1).x, points.get(2).x, points.get(3).x },
-//                { points.get(0).y, points.get(1).y, points.get(2).y, points.get(3).y },
-//                { points.get(0).z, points.get(1).z, points.get(2).z, points.get(3).z },
-//                {             1.0,             1.0,             1.0,             1.0 }
-//        });
         Matrix lib_euc = Matrix.create(new double[][]{
-                { points.get(0).x, points.get(0).x, points.get(0).x-10, points.get(0).x },
-                { points.get(0).y, points.get(0).y, points.get(0).y, points.get(0).y+20 },
-                { points.get(0).z, points.get(0).z-7, points.get(0).z, points.get(0).z },
+                { points.get(0).x, points.get(1).x, points.get(2).x, points.get(3).x },
+                { points.get(0).y, points.get(1).y, points.get(2).y, points.get(3).y },
+                { points.get(0).z, points.get(1).z, points.get(2).z, points.get(3).z },
                 {             1.0,             1.0,             1.0,             1.0 }
         });
 
+        // 上記でずれる場合
+//        Matrix lib_euc = Matrix.create(new double[][]{
+//                { points.get(0).x, points.get(0).x, points.get(0).x-10, points.get(0).x },
+//                { points.get(0).y, points.get(0).y, points.get(0).y, points.get(0).y+20 },
+//                { points.get(0).z, points.get(0).z-7, points.get(0).z, points.get(0).z },
+//                {             1.0,             1.0,             1.0,             1.0 }
+//        });
+
+        // Liberty -> World の位置座標系変換行列生成
         Matrix M_lib2world_euc = world_euc.product(lib_euc.solve(Matrix.identity(4)));
 
         // ファイル出力

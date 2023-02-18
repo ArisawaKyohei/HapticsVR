@@ -28,19 +28,6 @@ public class ViewportController implements EventListener, Transformable<Matrix> 
     @Override
     public void position(double x, double y, double z, long time /* ns */) {
         m_model.setViewpointPosition(x, y, z);
-//        position = Matrix.create(new double[][]{
-//                {x},
-//                {y},
-//                {z},
-//                {1}
-//        });
-//
-//        Matrix worldPosition = transform(HapticsClient.getLib2WorldMatrix());
-//        m_model.setViewpointPosition(worldPosition.get(0,0)*100, worldPosition.get(1,0)*100, worldPosition.get(2,0)*100); // m -> cm
-//        System.out.printf("\rx = " + x + ", y = " + y + ", z = " + z +
-//                " -> x = " +worldPosition.get(0,0)+ ", y = "+worldPosition.get(1,0)+", z = "+worldPosition.get(2,0));
-
-
     }
 
     @Override

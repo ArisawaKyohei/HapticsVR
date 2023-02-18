@@ -54,7 +54,6 @@ public class HapticsStylusController implements EventListener, ForceUpdater, Tra
 
     @Override
     public void position(double x, double y, double z, long time /* ns */) {
-//        System.out.printf("\rz:%.3f, y:%3f, z:%3f\033[0K", x, y, z);
         position = Matrix.create(new double[][]{
                 {x},
                 {y},
@@ -64,8 +63,6 @@ public class HapticsStylusController implements EventListener, ForceUpdater, Tra
 
         Matrix worldPosition = transform(m_client.getGeo2WorldMatrix());
         m_model.setHapticsPosition(worldPosition.get(0,0), worldPosition.get(1,0), worldPosition.get(2,0), time * 1e-9);
-//        System.out.printf("\rx = " + x + ", y = " + y + ", z = " + z +
-//                           " -> x = " +worldPosition.get(0,0)+ ", y = "+worldPosition.get(1,0)+", z = "+worldPosition.get(2,0));
     }
 
     @Override
@@ -80,10 +77,7 @@ public class HapticsStylusController implements EventListener, ForceUpdater, Tra
                 {force.y()},
                 {force.z()}
         }));
-        //System.out.println(geoForce.get(0,0)+", "+geoForce.get(1,0)+", "+geoForce.get(2,0));
-//        System.out.printf("\r"+force + " -> x = "+geoForce.get(0,0)+" y = " +geoForce.get(1,0)+" z = " +geoForce.get(2,0));
         m_client.sendForceEvent(geoForce.get(0,0), geoForce.get(1,0), geoForce.get(2,0));
-//        m_client.sendForceEvent(0,0, 0);
     }
 
 
