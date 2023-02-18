@@ -1,0 +1,583 @@
+/*
+ * DeviceState.java
+ *
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.dummydeviceserver;
+
+import java.util.concurrent.CopyOnWriteArrayList;
+
+/**
+ * デバイスの状態。
+ */
+public class DeviceState {
+    /** x座標値 */
+    private double x;
+
+    /** y座標値 */
+    private double y;
+
+    /** z座標値 */
+    private double z;
+
+    /** x軸周りの回転量 */
+    private double pX;
+
+    /** y軸周りの回転量 */
+    private double pY;
+
+    /** z軸周りの回転量 */
+    private double pZ;
+
+    /** 位置操作のステップ幅 */
+    private double positionStep;
+
+    /** 姿勢操作のステップ幅 */
+    private double postureStep;
+
+    /** デフォルトの位置 */
+    private final double[] defaultPosition;
+
+    /** デフォルトの姿勢 */
+    private final double[] defaultPosture;
+
+    /** ボタンの押下状態 */
+    private final boolean[] buttons;
+
+    /** 姿勢操作のステップ幅の元となる指数 */
+    private int postureStepScale;
+
+    /** 位置操作のステップ幅の元となる指数 */
+    private int positionStepScale;
+
+    /** リスナー群 */
+    private final CopyOnWriteArrayList<DeviceEventListener> listeners;
+
+    /** 定期的にデバイス情報を送信する場合はtrue */
+    private final boolean isConstantSending;
+
+    /**
+     * ボタンの数とデフォルト値を指定するコンストラクタ。
+     * @param buttonsNum ボタンの数。
+     * @param x デフォルトのx座標値。
+     * @param y デフォルトのy座標値。
+     * @param z デフォルトのz座標値。
+     * @param a デフォルトのx軸周りの回転量。
+     * @param b デフォルトのy軸周りの回転量。
+     * @param c デフォルトのz軸周りの回転量。
+     */
+    public DeviceState(boolean isConstantSending, int buttonsNum, double x, double y, double z, double a, double b, double c) {
+        this.isConstantSending = isConstantSending;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.pX = a;
+        this.pY = b;
+        this.pZ = c;
+        defaultPosition = new double[] {x, y, z};
+        defaultPosture = new double[] {a, b, c};
+        positionStep = 1.0;
+        postureStep = 1.0;
+        buttons = new boolean[buttonsNum];
+        listeners = new CopyOnWriteArrayList<DeviceEventListener>();
+    }
+
+    /**
+     * x座標値の取得。
+     * @return x座標値。
+     */
+    public double getX() {
+        return x;
+    }
+
+    /**
+     * y座標値の取得。
+     * @return y座標値。
+     */
+    public double getY() {
+        return y;
+    }
+
+    /**
+     * z座標値の取得。
+     * @return z座標値。
+     */
+    public double getZ() {
+        return z;
+    }
+
+    /**
+     * x軸周りの回転量の取得。
+     * @return x軸周りの回転量。
+     */
+    public double getPX() {
+        return pX;
+    }
+
+    /**
+     * y軸周りの回転量の取得。
+     * @return y軸周りの回転量。
+     */
+    public double getPY() {
+        return pY;
+    }
+
+    /**
+     * z軸周りの回転量の取得。
+     * @return z軸周りの回転量。
+     */
+    public double getPZ() {
+        return pZ;
+    }
+
+    /**
+     * ボタンの数の取得。
+     * @return ボタンの数
+     */
+    public int getButtonsNum() {
+        return buttons.length;
+    }
+
+    /**
+     * 指定した番号のボタンの押下状態の取得。
+     * @param buttonNum ボタン番号。
+     * @return ボタンが押されていたらtrue。
+     */
+    public boolean getButton(int buttonNum) {
+        return buttons[buttonNum];
+    }
+
+    /**
+     * 指定した番号のボタンの押下。
+     * @param buttonNum ボタン番号。
+     */
+    public void pressButton(int buttonNum) {
+        if (!buttons[buttonNum]) {
+            // イベントを配信
+            long time = System.currentTimeMillis();
+            for (DeviceEventListener l : listeners) {
+                l.buttonPressed(this, buttonNum, time);
+            }
+        }
+        buttons[buttonNum] = true;
+    }
+
+    /**
+     * 指定した番号のボタンの解放。
+     * @param buttonNum ボタン番号。
+     */
+    public void releaseButton(int buttonNum) {
+        if (buttons[buttonNum]) {
+            // イベントを配信
+            long time = System.currentTimeMillis();
+            for (DeviceEventListener l : listeners) {
+                l.buttonReleased(this, buttonNum, time);
+            }
+        }
+        buttons[buttonNum] = false;
+    }
+
+    /**
+     * 位置操作のステップ幅の増加。
+     */
+    public void incrementPositionStepScale() {
+        if (positionStepScale == Integer.MAX_VALUE) {
+            return;
+        }
+        int newStepScale = positionStepScale + 1;
+        double newStep = Math.pow(2.0, newStepScale);
+        if (newStep == 0.0 || Double.isInfinite(newStep)) {
+            return;
+        }
+
+        positionStepScale = newStepScale;
+        positionStep = newStep;
+
+        // イベントを配信
+        long time = System.currentTimeMillis();
+        for (DeviceEventListener l : listeners) {
+            l.positionStepChanged(this, positionStep, time);
+        }
+    }
+
+    /**
+     * 位置操作のステップ幅の減少。
+     */
+    public void decrementPositionStepScale() {
+        if (positionStepScale == Integer.MIN_VALUE) {
+            return;
+        }
+        int newStepScale = positionStepScale - 1;
+        double newStep = Math.pow(2.0, newStepScale);
+        if (newStep == 0.0 || Double.isInfinite(newStep)) {
+            return;
+        }
+
+        positionStepScale = newStepScale;
+        positionStep = newStep;
+
+        // イベントを配信
+        long time = System.currentTimeMillis();
+        for (DeviceEventListener l : listeners) {
+            l.positionStepChanged(this, positionStep, time);
+        }
+    }
+
+    /**
+     * 姿勢操作のステップ幅の増加。
+     */
+    public void incrementPostureStepScale() {
+        if (postureStepScale == Integer.MAX_VALUE) {
+            return;
+        }
+        int newStepScale = postureStepScale + 1;
+        double newStep = Math.pow(2.0, newStepScale);
+        if (newStep == 0.0 || Double.isInfinite(newStep)) {
+            return;
+        }
+
+        postureStepScale = newStepScale;
+        postureStep = newStep;
+
+        // イベントを配信
+        long time = System.currentTimeMillis();
+        for (DeviceEventListener l : listeners) {
+            l.postureStepChanged(this, postureStep, time);
+        }
+    }
+
+    /**
+     * 姿勢操作のステップ幅の減少。
+     */
+    public void decrementPostureStepScale() {
+        if (postureStepScale == Integer.MIN_VALUE) {
+            return;
+        }
+        int newStepScale = postureStepScale - 1;
+        double newStep = Math.pow(2.0, newStepScale);
+        if (newStep == 0.0 || Double.isInfinite(newStep)) {
+            return;
+        }
+
+        postureStepScale = newStepScale;
+        postureStep = newStep;
+
+        // イベントを配信
+        long time = System.currentTimeMillis();
+        for (DeviceEventListener l : listeners) {
+            l.postureStepChanged(this, postureStep, time);
+        }
+    }
+
+    /**
+     * 位置操作のステップ幅の取得。
+     * @return 位置操作のステップ幅。
+     */
+    public double getPositionStep() {
+        return positionStep;
+    }
+
+    /**
+     * 姿勢操作のステップ幅の取得。
+     * @return 姿勢操作のステップ幅。
+     */
+    public double getPostureStep() {
+        return postureStep;
+    }
+
+    /**
+     * 位置の初期化。
+     */
+    public void resetPosition() {
+        synchronized(this){
+            x = defaultPosition[0];
+            y = defaultPosition[1];
+            z = defaultPosition[2];
+        }
+        positionStep = 1.0;
+        positionStepScale = 0;
+
+        // イベントを配信
+        if (!isConstantSending){
+            sendPosition();
+        }
+        long time = System.currentTimeMillis();
+        for (DeviceEventListener l : listeners) {
+            l.positionStepChanged(this, positionStep, time);
+        }
+    }
+
+    /**
+     * 姿勢の初期化。
+     */
+    public void resetPosture() {
+        synchronized (this) {
+            pX = defaultPosture[0];
+            pY = defaultPosture[1];
+            pZ = defaultPosture[2];
+        }
+        postureStep = 1.0;
+        postureStepScale = 0;
+
+        // イベントを配信
+        if (!isConstantSending){
+            sendPosture();
+        }
+        long time = System.currentTimeMillis();
+        for (DeviceEventListener l : listeners) {
+            l.postureStepChanged(this, postureStep, time);
+        }
+    }
+
+    /**
+     * x座標値の増加。
+     */
+    public void incrementX() {
+        double newX = x + positionStep;
+        if (Double.isInfinite(newX)) {
+            return;
+        }
+        synchronized(this){
+            x = newX;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosition();
+        }
+    }
+
+    /**
+     * x座標値の減少。
+     */
+    public void decrementX() {
+        double newX = x - positionStep;
+        if (Double.isInfinite(newX)) {
+            return;
+        }
+        synchronized(this){
+            x = newX;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosition();
+        }
+    }
+
+    /**
+     * y座標値の増加。
+     */
+    public void incrementY() {
+        double newY = y + positionStep;
+        if (Double.isInfinite(newY)) {
+            return;
+        }
+        synchronized(this){
+            y = newY;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosition();
+        }
+    }
+
+    /**
+     * y座標値の減少。
+     */
+    public void decrementY() {
+        double newY = y - positionStep;
+        if (Double.isInfinite(newY)) {
+            return;
+        }
+        synchronized(this){
+            y = newY;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosition();
+        }
+    }
+
+    /**
+     * z座標値の増加。
+     */
+    public void incrementZ() {
+        double newZ = z + positionStep;
+        if (Double.isInfinite(newZ)) {
+            return;
+        }
+        synchronized(this){
+            z = newZ;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosition();
+        }
+    }
+
+    /**
+     * z座標値の減少。
+     */
+    public void decrementZ() {
+        double newZ = z - positionStep;
+        if (Double.isInfinite(newZ)) {
+            return;
+        }
+        synchronized(this){
+            z = newZ;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosition();
+        }
+    }
+
+    /**
+     * x軸周りの回転量の増加。
+     */
+    public void incrementPX() {
+        double newPX = pX + postureStep;
+        if (Double.isInfinite(newPX)) {
+            return;
+        }
+        synchronized(this){
+            pX = newPX;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosture();
+        }
+    }
+
+    /**
+     * x軸周りの回転量の減少。
+     */
+    public void decrementPX() {
+        double newPX = pX - postureStep;
+        if (Double.isInfinite(newPX)) {
+            return;
+        }
+        synchronized(this){
+            pX = newPX;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosture();
+        }
+    }
+
+    /**
+     * y軸周りの回転量の増加。
+     */
+    public void incrementPY() {
+        double newPY = pY + postureStep;
+        if (Double.isInfinite(newPY)) {
+            return;
+        }
+        synchronized(this){
+            pY = newPY;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosture();
+        }
+    }
+
+    /**
+     * y軸周りの回転量の減少。
+     */
+    public void decrementPY() {
+        double newPY = pY - postureStep;
+        if (Double.isInfinite(newPY)) {
+            return;
+        }
+        synchronized(this){
+            pY = newPY;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosture();
+        }
+    }
+
+    /**
+     * z軸周りの回転量の増加。
+     */
+    public void incrementPZ() {
+        double newPZ = pZ + postureStep;
+        if (Double.isInfinite(newPZ)) {
+            return;
+        }
+        synchronized(this){
+            pZ = newPZ;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosture();
+        }
+    }
+
+    /**
+     * z軸周りの回転量の減少。
+     */
+    public void decrementPZ() {
+        double newPZ = pZ - postureStep;
+        if (Double.isInfinite(newPZ)) {
+            return;
+        }
+        synchronized(this){
+            pZ = newPZ;
+        }
+
+        // イベントを配信
+        if(!isConstantSending){
+            sendPosture();
+        }
+    }
+
+    /**
+     * デバイスイベントリスナーの登録。
+     * @param listener デバイスイベントリスナー。
+     */
+    public void addDeviceEventListener(DeviceEventListener listener) {
+        listeners.add(listener);
+    }
+
+    /**
+     * デバイスイベントリスナーの削除。
+     * @param listener デバイスイベントリスナー。
+     */
+    public void removeDeviceEventListener(DeviceEventListener listener) {
+        listeners.remove(listener);
+    }
+
+    /**
+     * デバイスの位置を配信
+     */
+    public void sendPosition(){
+        long time = System.currentTimeMillis();
+        for (DeviceEventListener l : listeners) {
+            l.positionChanged(this, x, y, z, time);
+        }
+    }
+    
+    /**
+     * デバイスの姿勢を配信
+     */
+    public void sendPosture(){
+        long time = System.currentTimeMillis();
+        for (DeviceEventListener l : listeners) {
+            l.postureChanged(this, pX, pY, pZ, time);
+        }
+    }
+}

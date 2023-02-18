@@ -1,0 +1,37 @@
+#!/bash/sh
+# (ホームディレクトリ)/に.sagalabを生成し、
+# gesture.tar.gz(ジェスチャーモデル)、zinnia-0.06.tar.gz(Zinnia)を.sagalabにコピー
+mkdir $HOME/.sagalab
+cp gesture.tar.gz $HOME/.sagalab
+cp zinnia-0.06.tar.gz $HOME/.sagalab
+
+# (ホームディレクトリ)/.sagalab/にlibを生成し、
+# adapter.tar.gz(Zinniaとのアダプタ)を(ホームディレクトリ)/.sagalab/libにコピー
+mkdir $HOME/.sagalab/lib
+cp adapter.tar.gz $HOME/.sagalab/lib
+
+# (ホームディレクトリ).sagalabに移動し、gesture.tar.gzとzinnia-0.06を展開
+cd $HOME/.sagalab
+tar xzf gesture.tar.gz
+tar xzf zinnia-0.06.tar.gz
+
+# (ホームディレクトリ)/.sagalab/zinnia-0.06に移動しZinniaをインストール
+cd zinnia-0.06
+./configure --prefix=$HOME/.sagalab
+make
+make install
+cd ..
+
+# (ホームディレクトリ)/.sagalab/libに移動し,adapter.tar.gzを展開
+cd $HOME/.sagalab/lib
+tar xzf adapter.tar.gz
+
+# (ホームディレクトリ)/.sagalab/lib/adapterに移動
+cd adapter
+
+# コンパイル
+make
+# ここのコンパイルに失敗する場合は、
+# (ホームディレクトリ)/.sagalab/lib/adapterのMakefileを書き換える
+# MakefileのJNI_HEADER_DIRの部分を自分のJNIのHEADERの参照PATHに書き換える
+# JNI_HEADER_DIR = /System/Library/Frameworks/JavaVM.framework/Headers

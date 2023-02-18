@@ -1,0 +1,58 @@
+/*
+ * City.java
+ * 都市の名称と位置を管理するデータオブジェクト
+ * Oct. 2016 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.pbl2018;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Scanner;
+import jp.ac.muroran_it.csse.vr_skelton.Position;
+
+/**
+ * 都市情報のデータオブジェクト
+ */
+public class City{
+    /** 都市名 */
+    private final String name;
+
+    /** 都市の位置座標 */
+    private final Coordinate coordinate;
+    
+    /**
+     * 都市名と位置座標を指定するコンストラクタ。
+     * @param name 都市名
+     * @param coordinate 位置座標
+     */
+    public City(String name, Coordinate coordinate) {
+        this.coordinate = coordinate;
+        this.name = name;
+    }
+    /**
+     * 都市名と緯度と経度を指定するコンストラクタ。
+     * @param name 都市名
+     * @param latitude 緯度(度)
+     * @param longitude 経度(度)
+     */
+    public City(String name, double latitude, double longitude) {
+        this(name, new Coordinate(latitude,longitude));
+    }
+
+    /**
+     * 名前の取得
+     * @return 名前。
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * 位置座標の取得
+     * @return 位置座標
+     */
+    public Position getPosition() {
+        return coordinate.toPosition();
+    }
+}

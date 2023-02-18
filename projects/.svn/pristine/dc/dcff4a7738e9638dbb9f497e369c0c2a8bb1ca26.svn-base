@@ -1,0 +1,383 @@
+/*
+ * MainFrame.java
+ *
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.dummydeviceserver;
+
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+
+/**
+ *　メイン関数を含む、メインのウィンドウ。
+ */
+public class MainFrame extends JFrame {
+    /** 制御モード */
+    private static enum ControlMode {
+        /** 位置操作モード */
+        POSITION,
+        /** 姿勢操作モード */
+        POSTURE,
+        /** 無操作モード */
+        NONE
+    };
+
+    /** 制御モード */
+    private ControlMode controlMode = ControlMode.NONE;
+
+    /** 制御対象のデバイス */
+    private DeviceState targetDevice;
+
+    /** SpacePilot状態のビュー */
+    private final DeviceView spacePilotView;
+
+    /** スタイラス状態のビュー */
+    private final DeviceView stylusView;
+
+    /** 視点センサ状態のビュー */
+    private final DeviceView viewpointView;
+
+    /** 無操作時のデバイス状態のビュー */
+    private static final DeviceView NULL_DEVICE = new DeviceView("", "", "", new DeviceState(false, 0, 0, 0, 0, 0, 0, 0));
+
+    /**
+     * デフォルトコンストラクタ。
+     */
+    private MainFrame() {
+        super("DummyDeviceServer");
+
+        // デバイス群を生成
+        final DeviceState spacePilot = new DeviceState(true, 12, 0, 0, 0, 0, 0, 0);
+        final DeviceState stylus = new DeviceState(false, 1, 0, 25, -15, -140, 30, 0);
+        final DeviceState viewpoint = new DeviceState(false, 0, 0, 55, 20, 90, 20, 180);
+
+        // デバイス状態のビュー群を生成
+        spacePilotView = new DeviceView("Space Pilot", "W", "S", spacePilot);
+        stylusView = new DeviceView("Stylus", "E", "D", stylus);
+        viewpointView = new DeviceView("Viewpoint", "R", "F", viewpoint);
+
+        // パネルにデバイス状態のビュー群を配置
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout());
+        panel.add(spacePilotView);
+        panel.add(stylusView);
+        panel.add(viewpointView);
+
+        // パネルのアクションマップとインプットマップを取得
+        ActionMap am = panel.getActionMap();
+        InputMap im = panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+        // キーストロークと制御モードの関連付けを定義
+        Map<String, ControlMode> modeMap = new HashMap<String, ControlMode>(6);
+        modeMap.put("W", ControlMode.POSITION);
+        modeMap.put("S", ControlMode.POSTURE);
+        modeMap.put("E", ControlMode.POSITION);
+        modeMap.put("D", ControlMode.POSTURE);
+        modeMap.put("R", ControlMode.POSITION);
+        modeMap.put("F", ControlMode.POSTURE);
+
+        // キーストロークとデバイス状態のビューの関連付けを定義
+        Map<String, DeviceView> deviceMap = new HashMap<String, DeviceView>(6);
+        deviceMap.put("W", spacePilotView);
+        deviceMap.put("S", spacePilotView);
+        deviceMap.put("E", stylusView);
+        deviceMap.put("D", stylusView);
+        deviceMap.put("R", viewpointView);
+        deviceMap.put("F", viewpointView);
+
+
+        // 定義した内容に基づいてキーストロークと制御モード、制御対象デバイスを関連付け
+        for (String key : modeMap.keySet()) {
+            DeviceView device = deviceMap.get(key);
+            setControlKey("pressed " + key, am, im, modeMap.get(key), device);
+            setControlKey("released " + key, am, im, controlMode.NONE, NULL_DEVICE);
+        }
+
+        // 位置、姿勢操作の設定
+        setActionKey("pressed NUMPAD5", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.resetPosition();
+                        break;
+                    case POSTURE:
+                        targetDevice.resetPosture();
+                        break;
+                }
+            }
+        });
+        setActionKey("pressed NUMPAD9", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.incrementPositionStepScale();
+                        break;
+                    case POSTURE:
+                        targetDevice.incrementPostureStepScale();
+                        break;
+                }
+            }
+        });
+        setActionKey("pressed NUMPAD3", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.decrementPositionStepScale();
+                        break;
+                    case POSTURE:
+                        targetDevice.decrementPostureStepScale();
+                        break;
+                }
+            }
+        });
+        setActionKey("pressed NUMPAD7", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.decrementZ();
+                        break;
+                    case POSTURE:
+                        targetDevice.incrementPX();
+                        break;
+                }
+            }
+        });
+        setActionKey("pressed NUMPAD1", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.incrementZ();
+                        break;
+                    case POSTURE:
+                        targetDevice.decrementPX();
+                        break;
+                }
+            }
+        });
+        setActionKey("pressed NUMPAD8", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.incrementY();
+                        break;
+                    case POSTURE:
+                        targetDevice.incrementPY();
+                        break;
+                }
+            }
+        });
+        setActionKey("pressed NUMPAD2", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.decrementY();
+                        break;
+                    case POSTURE:
+                        targetDevice.decrementPY();
+                        break;
+                }
+            }
+        });
+        setActionKey("pressed NUMPAD6", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.incrementX();
+                        break;
+                    case POSTURE:
+                        targetDevice.decrementPZ();
+                        break;
+                }
+            }
+        });
+        setActionKey("pressed NUMPAD4", am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                switch (controlMode) {
+                    case POSITION:
+                        targetDevice.decrementX();
+                        break;
+                    case POSTURE:
+                        targetDevice.incrementPZ();
+                        break;
+                }
+            }
+        });
+
+        // スタイラスボタン操作の設定
+        setActionKey("pressed SPACE", am, im, new AbstractAction() {
+            /** ボタンが押されている場合はtrue */
+            private boolean buttonPressed;
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (targetDevice == stylus) {
+                    if (buttonPressed) {
+                        stylus.releaseButton(0);
+                    } else {
+                        stylus.pressButton(0);
+                    }
+                    buttonPressed = !buttonPressed;
+                }
+            }
+        });
+
+        // UPキー操作の設定
+        setSpacePilotKey("UP", spacePilot, am, im, 7);
+        // DOWNキー操作の設定
+        setSpacePilotKey("DOWN", spacePilot, am, im, 10);
+        // RIGHTキー操作の設定
+        setSpacePilotKey("RIGHT", spacePilot, am, im, 9);
+        // LEFTキー操作の設定
+        setSpacePilotKey("LEFT", spacePilot, am, im, 8);
+        // ENTERキー操作の設定
+        setSpacePilotKey("ENTER", spacePilot, am, im, 11);
+
+        // キー操作の設定
+        setSpacePilotKey("1", spacePilot, am, im, 1);
+        setSpacePilotKey("2", spacePilot, am, im, 2);
+        setSpacePilotKey("3", spacePilot, am, im, 3);
+        setSpacePilotKey("4", spacePilot, am, im, 4);
+        setSpacePilotKey("5", spacePilot, am, im, 5);
+
+        getContentPane().add(panel);
+        targetDevice = NULL_DEVICE.getState();
+    }
+
+    /**
+     * キーストロークに対する、制御モードとデバイス状態のビューの切り替え操作の関連付け。
+     * @param keyStroke キーストローク。
+     * @param am アクションマップ。
+     * @param im インプットマップ。
+     * @param mode キーストロークに関連付ける制御モード。
+     * @param view キーストロークに関連付けるデバイス状態のビュー。
+     */
+    private void setControlKey(final String keyStroke, ActionMap am, InputMap im, final ControlMode mode, final DeviceView view) {
+        KeyStroke key = KeyStroke.getKeyStroke(keyStroke);
+        im.put(key, keyStroke);
+        am.put(keyStroke, new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                controlMode = mode;
+                targetDevice = view.getState();
+
+                // デバイス状態のビューの文字色を赤、それ以外を黒に設定
+                DeviceView[] allViews = new DeviceView[] {stylusView, viewpointView, spacePilotView};
+                for (DeviceView v : allViews) {
+                    if (v == view) {
+                        switch (controlMode) {
+                            case POSITION:
+                                v.setPositionLabelsColor(Color.red);
+                                break;
+                            case POSTURE:
+                                v.setPostureLabelsColor(Color.red);
+                                break;
+                        }
+                    } else {
+                        v.setPositionLabelsColor(Color.black);
+                        v.setPostureLabelsColor(Color.black);
+                    }
+                }
+            }
+        });
+    }
+
+    private void setSpacePilotKey(String key, final DeviceState spacePilot, ActionMap am, InputMap im, final int buttonNum){
+        setActionKey("pressed " + key, am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("pressed");
+                spacePilot.pressButton(buttonNum);
+            }
+        });
+        setActionKey("released " + key, am, im, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                spacePilot.releaseButton(buttonNum);
+            }
+        });
+    }
+
+    /**
+     * 指定したキーストロークに対する、アクションの関連付け。
+     * @param keyStroke キーストローク。
+     * @param am 関連付けに使用するアクションマップ。
+     * @param im 関連付けに使用するインプットマップ。
+     * @param action キーストロークに関連付けるアクション。
+     */
+    private void setActionKey(String keyStroke, ActionMap am, InputMap im, AbstractAction action) {
+        KeyStroke key = KeyStroke.getKeyStroke(keyStroke);
+        im.put(key, keyStroke);
+        am.put(keyStroke, action);
+    }
+
+    /**
+     * メイン関数。
+     * @param args コマンドライン引数。
+     */
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                // ウィンドウを生成
+                final MainFrame frame = new MainFrame();
+
+                try {
+                    // サーバを起動
+                    new Thread(new Server(11113, new DeviceState[] {frame.stylusView.getState(), frame.viewpointView.getState()})).start();
+                    new Thread(new Server(11112, new DeviceState[] {frame.spacePilotView.getState()})).start();
+                    new Thread(){
+                        private final DeviceState deviceState = frame.spacePilotView.getState();
+                        @Override
+                        public void run(){
+                            while(true){
+                                try {
+                                    sleep(10);
+                                } catch (InterruptedException ex) {
+                                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+
+                                synchronized (deviceState) {
+                                    deviceState.sendPosition();
+                                    deviceState.sendPosture();
+                                }
+                            }
+                        }
+                    }.start();
+                } catch (IOException ex) {
+                    // サーバの起動に失敗した場合はプログラム終了
+                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                    System.exit(1);
+                }
+
+                // ウィンドウを設定
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // ウィンドウを閉じたらプログラムを終了するように設定
+                frame.pack();                                         // ウィンドウサイズを設定
+
+                // ウィンドウを可視化
+                frame.setVisible(true);
+            }
+        });
+    }
+}

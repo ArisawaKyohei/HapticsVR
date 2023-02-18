@@ -1,0 +1,140 @@
+/*
+ * Main.java
+ *
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.simple_viewer;
+
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import javax.swing.SwingUtilities;
+import jp.ac.muroran_it.csse.deviceclient.DeviceClient;
+import jp.ac.muroran_it.csse.vr_skelton.Config;
+import jp.ac.muroran_it.csse.vr_skelton.Config.Mode;
+import jp.ac.muroran_it.csse.vr_skelton.GLFrame;
+import jp.ac.muroran_it.csse.vr_skelton.VRSpaceState;
+
+/**
+ * メイン関数を含んだクラス。
+ */
+public class Main {
+    /**
+     * メイン関数。
+     * @param args コマンドライン引数
+     */
+    public static void main(String[] args) {
+        // ステレオ表示の設定とDeviceClientの設定を読み込み
+        File configFile = new File("/usr/local/pbl/device.cfg");
+        final Config config;
+        if (configFile.exists()) {
+            // 設定ファイルがある場合は設定ファイルから読み込み
+            config = Config.loadFile(configFile);
+        } else {
+            // 設定ファイルがない場合はデフォルト設定を読み込み
+            config = Config.loadDefault();
+        }
+
+        // VR空間状態とその表示を設定
+        final Mode displayMode = config.getdisplayMode();
+        final SimpleVRSpaceState state = new SimpleVRSpaceState();
+        final SimpleVRSpaceView view = new SimpleVRSpaceView(state, displayMode);
+
+        // VR空間状態を初期化
+        setupVRSpaceState(state);
+
+        // デバイスを設定
+        setupDevice(state, config);
+        
+        // アニメーションスレッドの開始
+        setupAnimation(state);
+        
+        // ウィンドウを設定
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                // ウィンドウを生成して可視化
+                final GLFrame frame = GLFrame.createAndShow(displayMode);
+                // キーリスナーの設定
+                final KeyAdapter keyAdapter = new KeyAdapter() {
+                    /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ #1 ▼▼▼ */
+                    /**
+                     * キープレスイベントへの対応。
+                     * キーボードのキーが押されたときに呼ばれる。
+                     * @param e キーイベント。
+                     */
+                    @Override
+                    public void keyPressed(KeyEvent e) {
+                        switch (e.getKeyCode()) {
+                            case KeyEvent.VK_ESCAPE:
+                                // ESCキーでウィンドウを閉じる
+                                frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+                                break;
+                            case KeyEvent.VK_SPACE:
+                                // SPACEキーで左右の目の映像を入れ替え
+                                view.swapEyes();
+                                break;
+                        }
+                    }
+                    /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ #1 ▲▲▲ */
+                };
+                // ウィンドウにキーリスナーを設定
+                frame.addKeyListener(keyAdapter);
+                // ウィンドウにGLイベントリスナーを設定
+                frame.addGLEventListener(view);
+                frame.setVisible(true);
+            }
+        });
+    }
+
+    /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ #2 ▼▼▼ */
+    /**
+     * VR空間状態の初期設定。
+     * @param state VR空間状態。
+     */
+    private static void setupVRSpaceState(VRSpaceState state) {
+        // 仮想スタイラスの初期位置を設定
+        state.setStylusPosition(0.0, 25.0, -15.0);
+        state.setStylusPosture(-140.0, 30.0, 0.0);
+        // 仮想視点センサの初期位置を設定
+        state.setViewpointPosition(0.0, 55.0, 20.0);
+        state.setViewpointPosture(90.0, 20.0, 180.0);
+    }
+    /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ #2 ▲▲▲ */
+
+    /**
+     * デバイスの設定。
+     * @param state VR空間状態。
+     * @param config 設定。
+     */
+    private static void setupDevice(VRSpaceState state, Config config) {
+        // 仮想視点センサ操作デバイスを設定
+        ViewpointController viewpointController = new ViewpointController(state);
+        DeviceClient headMountDisplay = new DeviceClient();
+        headMountDisplay.connect(config.getLibertyIP(), config.getLibertyPort(), config.getViewpointSensor());
+        headMountDisplay.addDeviceListener(viewpointController);
+
+        // 仮想スタイラス制御デバイスを設定
+        StylusController stylusController = new StylusController(state);
+        DeviceClient stylus = new DeviceClient();
+        stylus.connect(config.getLibertyIP(), config.getLibertyPort(), config.getStylus());
+        stylus.addDeviceListener(stylusController);
+
+        // モデル空間操作デバイスを設定
+        ModelSpaceController modelSpaceController = new ModelSpaceController(state);
+        DeviceClient spacePilot = new DeviceClient();
+        spacePilot.connect(config.getSpacePilotIP(), config.getSpacePilotPort(), 0);
+        spacePilot.addDeviceListener(modelSpaceController);
+    }
+    /**
+    * アニメーションの開始。
+    * @param state VR 空間状態。
+    */
+    private static void setupAnimation(VRSpaceState state) {
+        // アニメーションコントローラを設定
+        AnimationController animationController = new AnimationController(state);
+        // アニメーションコントローラの開始
+        animationController.start();
+}
+}

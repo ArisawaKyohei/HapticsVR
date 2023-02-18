@@ -1,0 +1,70 @@
+/*
+ * DeviceEventListener.java
+ * 
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.dummydeviceserver;
+
+import java.util.EventListener;
+
+/**
+ * デバイス状態の更新情報を受けとるためのインターフェース。
+ */
+public interface DeviceEventListener extends EventListener {
+    /**
+     * 姿勢ステップ幅変更イベントへの対応。
+     * 姿勢操作のステップ幅が更新されたときに呼ばれる。
+     * @param source イベント発信元のデバイス。
+     * @param step 新たに設定されたステップ幅。
+     * @param time イベントの発生時刻。
+     */
+    void postureStepChanged(DeviceState source, double step, long time);
+
+    /**
+     * 位置ステップ幅変更イベントへの対応。
+     * 位置操作のステップ幅が更新されたときに呼ばれる。
+     * @param source イベント発信元のデバイス。
+     * @param step 新たに設定されたステップ幅。
+     * @param time イベントの発生時刻。
+     */
+    void positionStepChanged(DeviceState source, double step, long time);
+
+    /**
+     * 位置変更イベントへの対応。
+     * 位置が更新されたときに呼ばれる。
+     * @param source イベント発信元のデバイス。
+     * @param x 新たに設定されたx座標値。
+     * @param y 新たに設定されたy座標値。
+     * @param z 新たに設定されたz座標値。
+     * @param time イベントの発生時刻。
+     */
+    void positionChanged(DeviceState source, double x, double y, double z, long time);
+
+    /**
+     * 姿勢変更イベントへの対応。
+     * 姿勢が更新されたときに呼ばれる。
+     * @param x 新たに設定されたx軸周りの回転量。
+     * @param y 新たに設定されたy軸周りの回転量。
+     * @param z 新たに設定されたz軸周りの回転量。
+     * @param time イベントの発生時刻。
+     */
+    void postureChanged(DeviceState source, double x, double y, double z, long time);
+
+    /**
+     * ボタン押下イベントへの対応。
+     * ボタンが押されたときに呼ばれる。
+     * @param source イベント発信元のデバイス。
+     * @param button 押されたボタンの番号。
+     * @param time イベントの発生時刻。
+     */
+    void buttonPressed(DeviceState source, int button, long time);
+
+    /**
+     * ボタン解放イベントへの対応。
+     * ボタンが放されたときに呼ばれる。
+     * @param source イベント発信元のデバイス。
+     * @param button 放されたボタンの番号。
+     * @param time イベントの発生時刻。
+     */
+    void buttonReleased(DeviceState source, int button, long time);
+}

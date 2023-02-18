@@ -1,0 +1,69 @@
+/*
+ * WPSelfController.java
+ * 降水量のアニメーション処理を一元的に担当するコントローラー
+ * Oct. 2016 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.pbl2018;
+
+import jp.ac.muroran_it.csse.vr_skelton.TimerController;
+import jp.ac.muroran_it.csse.vr_skelton.VRSpaceState;
+
+public class WPSelfController extends TimerController{
+    // アニメーション状態
+    boolean flag = true;
+    // WPrecipitation
+    WPrecipitation obj;
+    
+    /**
+     * コンストラクタ
+     * @param state VRSpaceState
+     * @param object 操作対象のオブジェクト
+     */
+    public WPSelfController(VRSpaceState state, WPrecipitation object) {
+        super(state);
+        obj = object;
+
+        // 変化の間隔を1秒に設定
+        super.setAnimationInterval(1000);
+    }
+    
+    /**
+     * アニメーション動作のメイン処理
+     */
+    @Override
+    protected void action(){
+        // フラグが真の状態のときアニメーションで変化を発生させる
+        /*if(flag){
+            if(obj.getMax()>=7||obj.getMax()<0){ // 6-7まで行ったら0-1に戻す
+                obj.setCondition(0,1);
+                obj.setMax(1);
+            }else{
+                int max = obj.getMax()+1;
+                obj.setMax(max);
+                obj.setCondition(max-1,max); // 0-1, 1-2, ... 6-7 と範囲を変化
+            }
+        }*/
+        if(flag){
+            if(obj.getmonth()>=12||obj.getmonth()<0){
+                obj.setmonth(1);
+            }else{
+                obj.setmonth(obj.getmonth()+1);
+            }
+        }
+    }
+    
+    /**
+     * アニメーション中かどうかを調べるメソッド
+     * @return flagの状態
+     */
+    public boolean isAnimationRunning(){
+        return flag;
+    }
+    /**
+     * アニメーションのON/OFFを管理するメソッド
+     * @param flag
+     */
+    public void setAnimationFlag(boolean flag){
+        this.flag = flag;
+    }
+}

@@ -1,0 +1,91 @@
+/*
+ * SimpleVRSpaceState.java
+ *
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.simple_viewer;
+
+import jp.ac.muroran_it.csse.vr_skelton.Position;
+import jp.ac.muroran_it.csse.vr_skelton.VRSpaceState;
+
+/**
+ * ティーポットの座標値を付加したVR空間状態。
+ */
+public class SimpleVRSpaceState extends VRSpaceState {
+    /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ #3 ▼▼▼ */
+    /** ティーポット座標値 */
+    private Position teapotPosition = new Position(0.0, 30.0, -20.0);
+
+    /** ティーポットを選択している場合はtrue */
+    private boolean teapotSelected = false;
+    
+    /** 球座標値 */
+    private Position spherePosition = new Position(0.0, 30.0, -20.0);
+    
+    /** 球の半径 */
+    private float sphereRadius = 5.0f;
+    /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ #3 ▲▲▲ */
+
+    /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ #4 ▼▼▼ */
+    /**
+     * スタイラスのボタン状態の設定。
+     * ボタンを押したときにスタイラスがティーポットの近くにあったらティーポットを選択する。
+     * @param pressed スタイラスのボタンを押す場合true。
+     */
+    @Override
+    public synchronized void setStylusPressed(boolean pressed) {
+        super.setStylusPressed(pressed);
+        if (pressed) {
+            // モデル空間でのスタイラスの座標値を取得
+            Position stylusPosition = toModelSpace(getStylusPosition());
+
+            // スタイラスがティーポットの近くにあったらティーポットを選択
+            if (stylusPosition.calculateDistance(teapotPosition) < 5.0) {
+                teapotSelected = true;
+            } else {
+                teapotSelected = false;
+            }
+        }
+    }
+
+    /**
+     * ティーポット座標値の取得。
+     * @return ティーポット座標値。
+     */
+    public synchronized Position getTeapotPosition() {
+        return teapotPosition;
+    }
+
+    /**
+     * ティーポットの選択状態の取得。
+     * @return ティーポットが選択されていた場合はtrue。
+     */
+    public synchronized boolean isTeapotSelected() {
+        return teapotSelected;
+    }
+    
+    /**
+     * ティーポットの選択状態の取得
+     * @return ティーポットが選択されていた場合は true。
+     */
+    public synchronized boolean isTeapotsSelected(){
+        return teapotSelected;
+    }
+    
+    /**
+     * 球座標値の取得。
+     * @return 球座標値。
+     */
+    public synchronized Position getSpherePosition(){
+        return spherePosition;
+    }
+    
+    /**
+     * 球の半径の取得。
+     * @return 球の半径。
+     */
+    public synchronized float getSphereRadius(){
+        return sphereRadius;
+    }
+    /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ #4 ▲▲▲ */
+}

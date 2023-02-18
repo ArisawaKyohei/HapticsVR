@@ -1,0 +1,57 @@
+/*
+ * EqCenter.java
+ * 震源情報のデータオブジェクト
+ * Oct. 2016 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.pbl2018;
+
+public class EqCenter {
+    /** 地震発生位置 */
+    private final Coordinate coordinate;
+    
+    /** 地震発生時刻 */
+    private final Time time;
+
+    /** マグニチュード */
+    private final double magnitude;
+
+    /**
+     * 震源位置と地震発生時刻、マグニチュードを指定するコンストラクタ。
+     * @param latitude 緯度(度)。
+     * @param longitude 経度(度)。
+     * @param altitude 高度(km)。
+     * @param time 地震発生時刻。
+     * @param magnitude マグニチュード。
+     */
+    public EqCenter(Coordinate coordinate, Time time, double magnitude) {
+        this.coordinate = coordinate;
+        this.time = time;
+        this.magnitude = magnitude;
+    }
+
+    /**
+     * 地震発生時刻の取得。
+     * @return 地震発生時刻。
+     */
+    public Time getTime() {
+        return time;
+    }
+
+    /**
+     * マグニチュードの取得。
+     * @return マグニチュード。
+     */
+    public double getMagnitude() {
+        return magnitude;
+    }
+
+    /**
+     * 震源位置の取得。
+     * ※自身をCoordinate型として返す
+     * @return 震源位置。
+     */
+    public Coordinate getCoordinate() {
+        return coordinate;
+    }
+
+}

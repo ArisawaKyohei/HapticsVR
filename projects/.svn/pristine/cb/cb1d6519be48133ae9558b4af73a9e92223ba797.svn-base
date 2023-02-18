@@ -1,0 +1,139 @@
+/*
+ * SampleVRSpaceView.java
+ *
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.simple_viewer;
+
+import com.sun.opengl.util.GLUT;
+import javax.media.opengl.GL;
+import jp.ac.muroran_it.csse.vr_skelton.Config.Mode;
+import jp.ac.muroran_it.csse.vr_skelton.Position;
+import jp.ac.muroran_it.csse.vr_skelton.Posture;
+import jp.ac.muroran_it.csse.vr_skelton.VRSpaceView;
+
+/**
+ * VR空間状態の内容を描画するVRSpaceView実装。
+ */
+public class SimpleVRSpaceView extends VRSpaceView {
+    /** VR空間状態 */
+    private final SimpleVRSpaceState state;
+
+    /**
+     * 描画するVR空間状態とステレオ表示の設定を指定するコンストラクタ。
+     * @param state VR空間状態。
+     * @param stereoMode ステレオ表示を有効にする場合はtrue。
+     */
+    public SimpleVRSpaceView(SimpleVRSpaceState state, Mode stereoMode) {
+        super(state, stereoMode);
+        this.state = state;
+    }
+
+    /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ #5 ▼▼▼ */
+    /**
+     * VRSpaceViewのdrawScene()の中で、VR空間中のオブジェクト群を描画するときに呼ばれる。
+     * @param gl GLオブジェクト。
+     */
+    @Override
+    public void drawVRSpaceObjects(GL gl) {
+        // 光源を設定
+        setLighting(gl);
+        // スタイラスを描画
+        drawStylus(gl);
+    }
+
+    /**
+     * 光源の設定。
+     * @param gl GLオブジェクト。
+     */
+    public void setLighting(GL gl) {
+        // 点光源の座標値を設定
+        float lightPosition[] = {0f, 70f, 0f, 1.0f};
+        gl.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, lightPosition, 0);
+
+        // 環境光を設定
+        float[] lightAmbient = new float[] {0.2f, 0.2f, 0.2f, 1.0f};
+        gl.glLightfv(GL.GL_LIGHT0, GL.GL_AMBIENT, lightAmbient, 0);
+    }
+
+    /**
+     * スタイラスの描画。
+     * @param gl GLオブジェクト。
+     */
+    private void drawStylus(GL gl) {
+        // 仮想スタイラスの座標値と姿勢を取得
+        Position stylusPosition = state.getStylusPosition();
+        Posture stylusPosture = state.getStylusPosture();
+
+        // GLの座標系を仮想スタイラスの座標値と姿勢に一致するように設定
+        gl.glTranslated(stylusPosition.getX(), stylusPosition.getY(), stylusPosition.getZ());
+        gl.glRotated(stylusPosture.getX(), 0.0, 0.0, 1.0);
+        gl.glRotated(stylusPosture.getY(), 0.0, 1.0, 0.0);
+        gl.glRotated(stylusPosture.getZ(), 1.0, 0.0, 0.0);
+
+        // スタイラスオブジェクトを描画
+        drawStylusObjects(gl);
+    }
+
+    /**
+     * スタイラスオブジェクトの描画。
+     * @param gl GLオブジェクト。
+     */
+    private void drawStylusObjects(GL gl) {
+        // デフォルト色は緑色
+        float[] ambientDiffuse = new float[] {0.0f, 1.0f, 0.0f, 1.0f};
+        if (state.isStylusPressed()) {
+            // スタイラスのボタンが押されているときは赤色
+            ambientDiffuse = new float[] {1.0f, 0.0f, 0.0f, 1.0f};
+        }
+        gl.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_AMBIENT_AND_DIFFUSE, ambientDiffuse, 0);
+
+        // スタイラスと同じ座標値、姿勢で角錐を描画
+        gl.glRotated(90.0, 0.0, 1.0, 0.0);
+        gl.glTranslated(0.0, 0.0, -16.0);
+        new GLUT().glutSolidCone(0.5, 16, 8, 1);
+    }
+    /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ #5 ▲▲▲ */
+
+    /* ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ #6 ▼▼▼ */
+    /**
+     * VRSpaceViewのdisplay()の中で、2DのTextオブジェクト群を描画するときに呼ばれる。
+     * @param gl 
+     */
+    @Override
+    public void draw2DTextSpaceObjects(GL gl){
+        
+    }
+    
+    /**
+     * VRSpaceViewのdrawScene()の中で、モデル空間中のオブジェクト群を描画するときに呼ばれる。
+     * @param gl GLオブジェクト。
+     */
+    @Override
+    public void drawModelSpaceObjects(GL gl) {
+        // ティーポット座標値を取得
+        Position teapotPosition = state.getTeapotPosition();
+
+        // 現在のモデルビュー行列を保存
+        gl.glPushMatrix();
+
+        // GLの座標系の原点をティーポットの座標値と一致するように設定
+        gl.glTranslated(teapotPosition.getX(), teapotPosition.getY(), teapotPosition.getZ());
+
+        // デフォルト色は青色
+        float[] ambientDiffuse = new float[] {0.0f, 0.0f, 1.0f, 1.0f};
+        if (state.isTeapotSelected()) {
+            // ティーポットが選択されているときは黄色
+            ambientDiffuse = new float[] {1.0f, 1.0f, 0.0f, 1.0f};
+        }
+        gl.glMaterialfv(GL.GL_FRONT_AND_BACK, GL.GL_AMBIENT_AND_DIFFUSE, ambientDiffuse, 0);
+
+        // ティーポットを描画
+        new GLUT().glutWireTeapot(5.0f);
+
+        // 保存したモデルビュー行列を復帰
+        gl.glPopMatrix();
+
+    }
+    /* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ #6 ▲▲▲ */
+}

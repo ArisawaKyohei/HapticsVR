@@ -1,0 +1,186 @@
+/*
+ * City.java
+ * 都市の名称と位置を管理するデータオブジェクト
+ * Oct. 2016 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.pbl2018;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Scanner;
+import jp.ac.muroran_it.csse.vr_skelton.Position;
+
+/**
+ * 都市情報のデータオブジェクト
+ */
+public class City{
+    /** 都市名 */
+    private final String name;
+    
+    /** 国名 */
+    private final String country;
+    /** 月 */
+    private final String month;
+    /** 気温 */
+    private final ArrayList<Double> temperature;
+    /** 降水量 */
+    private final ArrayList<Double> precipitation;
+
+    /** 都市の位置座標 */
+    private final Coordinate coordinate;
+    
+    
+    /**
+     * 指定したデータファイルからの都市情報群の読み込み。
+     * @param filename データファイル名。
+     * @return 読み込んだ位置情報群。
+     */
+    public static ArrayList<City> loadFile(String filename) {
+        ArrayList<City> tmpCities = new ArrayList<>();
+        Scanner scanner = null;
+        try {
+            // ファイルを開いてスキャナーにセット
+            if(filename.endsWith("csv")){
+                // CSVファイルの場合は区切り文字をコンマ(と改行)に変更
+                File file = new File(filename);
+                scanner = new Scanner(file,"SJIS");
+                scanner.useDelimiter(",|\n");
+            }else{
+                // ファイルを開いてスキャナーにセット
+                File file = new File(filename);
+                scanner = new Scanner(file);
+            }
+            
+            // ファイルの終わりまで読み込み
+            int n;
+            while (scanner.hasNextLine()) {
+                String name = scanner.next();      // 都市名
+                String country = scanner.next();   // 国名
+                double latitude = scanner.nextDouble();  // 緯度
+                String NS = scanner.next();        // 北N or 南S
+                double longitude = scanner.nextDouble(); // 経度
+                String EW = scanner.next();        // 東E or 西W
+                String month = scanner.next();         // 月
+                ArrayList<Double> temperature = new ArrayList<>();   // 気温
+                temperature.add(scanner.nextDouble());
+                ArrayList<Double> precipitation = new ArrayList<>();
+                precipitation.add(scanner.nextDouble()); // 降水量
+                for(n=2 ; n<=12 ; n++){
+                    month = month + "," + scanner.next();         // 月
+                    temperature.add(scanner.nextDouble());   // 気温
+                    precipitation.add(scanner.nextDouble()); // 降水量
+                }
+                tmpCities.add(new City(name,country,latitude,NS,longitude,EW,month,temperature,precipitation));
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            // スキャナを閉じる
+            if (scanner != null) {
+                scanner.close();
+            }
+        }
+        return tmpCities;
+    }
+    
+    
+    
+    
+    
+    
+    /**
+     * Coordinateで座標をVRに対応させる。
+     * @param name 都市名
+     * @param country 国名
+     * @param latitude 緯度(度)
+     * @param NS 北南 
+     * @param longitude 経度(度)
+     * @param EW　東西
+     * @param month 月
+     * @param temperature 気温
+     * @param precipitation 降水量
+     */
+    public City(String name,String country, double latitude, String NS, double longitude,String EW,String month,ArrayList<Double> temperature, ArrayList<Double>precipitation) {
+        this(name,country, new Coordinate(latitude,NS,longitude,EW),month,temperature,precipitation);
+    }
+    
+    
+    
+    /**
+     * 読み取った情報をCity内で使えるようにする。
+     * @param name 都市名
+     * @param country 国名
+     * @param coordinate 位置座標
+     * @param month 月
+     * @param temperature 気温
+     * @param precipitation 降水量
+     */
+    public City(String name,String country, Coordinate coordinate,String month, ArrayList<Double>temperature,ArrayList<Double> precipitation) {
+        this.name = name;
+        this.country = country;
+        this.coordinate = coordinate;
+        this.month = month;
+        this.temperature = temperature;
+        this.precipitation = precipitation;
+    }
+    
+    
+
+    // 以下、ゲッター
+    
+    
+    /**
+     * 名前の取得
+     * @return 都市名。
+     */
+    public String getName() {
+        //loadFile("africa.csv");
+        return name;
+    }
+    
+    /**
+     * 国名の取得
+     * @return 国名。
+     */
+    public String getCountry() {
+        return country;
+    }
+    
+    
+    
+    
+    
+    
+    /**
+     * 月の取得
+     * @return 月。
+     */
+    public String getMonth() {
+        return month;
+    }
+    
+    /**
+     * 気温の取得
+     * @return 気温。
+     */
+    public ArrayList<Double> getTemperaturelist() {
+        return temperature;
+    }
+    
+    /**
+     * 降水量の取得
+     * @return 降水量。
+     */
+    public ArrayList<Double> getPrecipitationlist() {
+        return precipitation;
+    }
+
+    /**
+     * 位置座標の取得
+     * @return 位置座標
+     */
+    public Position getPosition() {
+        return coordinate.toPosition();
+    }
+}

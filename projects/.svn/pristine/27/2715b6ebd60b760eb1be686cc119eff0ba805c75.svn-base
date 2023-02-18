@@ -1,0 +1,163 @@
+/*
+ * Server.java
+ *
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.dummydeviceserver;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
+
+/**
+ * デバイスイベント配信先を管理するサーバ。
+ */
+public class Server implements Runnable {
+    /** サーバソケットチャネル */
+    private final ServerSocketChannel serverChannel;
+
+    /** このサーバで扱うデバイス群 */
+    private final DeviceState[] devices;
+
+    /** デバイスへの関連付けが完了していないクライアントのリスト */
+    private final ArrayList<SocketChannel> waitSet;
+
+    /**
+     * 待ち受けポート番号とデバイス群を指定してサーバを生成。
+     * @param port 待ち受けポート番号。
+     * @param devices このサーバで扱うデバイス群。
+     * @throws IOException 入出力エラーが発生したとき。
+     */
+    public Server(int port, DeviceState[] devices) throws IOException {
+        // ノンブロッキングモードのチャネルを生成
+        ServerSocketChannel channel = ServerSocketChannel.open();
+        channel.configureBlocking(false);
+
+        // ソケットを設定
+        ServerSocket socket = channel.socket();
+        socket.setReuseAddress(true);
+        socket.bind(new InetSocketAddress(port));
+
+        this.serverChannel = channel;
+        this.devices = devices;
+        this.waitSet = new ArrayList<SocketChannel>(0);
+    }
+
+    @Override
+    public void run() {
+        ByteBuffer nullBuffer = ByteBuffer.allocateDirect(128);
+        try {
+            // サーバソケットチャネルをセレクタに登録
+            Selector selector = Selector.open();
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+            final int timeOut = 5 * 1000;
+            // 選択操作
+            while (selector.keys().size() > 0) {
+                selector.select(timeOut);
+                Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+                while (it.hasNext()) {
+                    SelectionKey key = it.next();
+                    it.remove();
+                    // 接続受理
+                    if (key.isValid() && key.isAcceptable()) {
+                        handleAcceptable(key);
+                    }
+                    // 読み込み
+                    if (key.isValid() && key.isReadable()) {
+                        handleReadable(key, nullBuffer);
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     * 接続受理可能なキーに対する処理。
+     * @param key 接続受理可能なキー。
+     */
+    private void handleAcceptable(SelectionKey key) {
+        try {
+            ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+            SocketChannel socket = channel.accept();
+            if (socket == null) {
+                return;
+            }
+            // ソケットチャネルをノンブロッキングIOに設定
+            socket.configureBlocking(false);
+            // ソケットチャネルを待ちリストに追加
+            waitSet.add(socket);
+            // ソケットチャネルを読み込み操作を監視するようセレクタに登録
+            socket.register(key.selector(), SelectionKey.OP_READ);
+        } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     * 読み込み可能なキーに対する処理。
+     * @param key 読み込み可能なキー。
+     * @param tmpBuffer 読み込みに使用する一時バッファ。
+     * @throws IOException 入出力エラーが発生したとき。
+     */
+    private void handleReadable(SelectionKey key, ByteBuffer tmpBuffer) throws IOException {
+        // 読み込み
+        SocketChannel channel = (SocketChannel) key.channel();
+        tmpBuffer.rewind();
+        int readByte = channel.read(tmpBuffer);
+        // 読み込みに失敗したら待ちリストから削除してソケットチャネルを閉鎖
+        if (readByte == -1) {
+            waitSet.remove(channel);
+            key.cancel();
+            channel.close();
+            return;
+        }
+
+        // デバイス番号に対応するデバイスイベントを配信するように設定
+        tmpBuffer.flip();
+        while (tmpBuffer.hasRemaining()) {
+            byte deviceId = tmpBuffer.get();
+            if (0 <= deviceId && deviceId < devices.length) {
+                DeviceState device = devices[deviceId];
+                SwingUtilities.invokeLater(new AddEventListener(device, channel));
+                waitSet.remove(channel);
+            }
+        }
+    }
+
+    /** デバイスイベントの配信を行うイベントリスナーをデバイスに登録する操作。 */
+    private class AddEventListener implements Runnable {
+        /** デバイスイベントの配信先 */
+        private final SocketChannel socket;
+
+        /** デバイスイベントの配信元 */
+        private final DeviceState device;
+
+        /**
+         * デバイスイベントの配信元と配信先を指定するコンストラクタ。
+         * @param device デバイスイベントの配信元となるデバイス。
+         * @param socket デバイスイベントの配信先となるソケットチャネル。
+         */
+        private AddEventListener(DeviceState device, SocketChannel socket) {
+            this.socket = socket;
+            this.device = device;
+        }
+
+        @Override
+        public void run() {
+            DeviceEventListener sender = new DeviceEventSender(socket);
+            device.addDeviceEventListener(sender);
+        }
+    }
+}

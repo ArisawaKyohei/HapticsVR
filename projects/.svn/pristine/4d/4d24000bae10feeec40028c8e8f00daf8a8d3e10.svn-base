@@ -1,0 +1,21 @@
+libs.CopyLibs.classpath=\
+    ${base}/CopyLibs/org-netbeans-modules-java-j2seproject-copylibstask.jar
+libs.CopyLibs.displayName=CopyLibs\u30bf\u30b9\u30af
+libs.CopyLibs.prop-version=2.0
+libs.hamcrest.classpath=\
+    ${base}/hamcrest-2/hamcrest-core-1.3.jar
+libs.hamcrest.displayName=Hamcrest 1.3
+libs.hamcrest.prop-maven-dependencies=org.hamcrest:hamcrest-core:1.3:jar
+libs.JOGL1.1.1.classpath=\
+    ${base}/JOGL1.1.1/gluegen-rt.jar:\
+    ${base}/JOGL1.1.1/jogl.jar
+libs.JOGL1.1.1.displayName=JOGL1.1.1
+libs.JUnit4.displayName=JUnit4
+libs.junit_4.classpath=\
+    ${base}/junit_4-2/junit-4.12.jar
+libs.junit_4.displayName=JUnit 4.12
+libs.junit_4.javadoc=\
+    ${base}/junit_4-2/junit-4.12-javadoc.jar
+libs.junit_4.prop-maven-dependencies=junit:junit:4.12:jar
+libs.junit_4.src=\
+    ${base}/junit_4-2/junit-4.12-sources.jar

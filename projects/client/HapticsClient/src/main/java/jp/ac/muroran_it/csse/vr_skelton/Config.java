@@ -1,0 +1,286 @@
+/*
+ * Config.java
+ *
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.vr_skelton;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Scanner;
+
+/**
+ * シーケンシャルステレオ表示の設定とDeviceClientの設定。
+ */
+public class Config {
+    /** シーケンシャルステレオ表示を有効にする場合はtrue */
+    private final boolean stereo;
+
+    /** デバイスサーバのIPアドレス */
+    private final String libertyIP;
+
+    /** SpacePilotサーバのIPアドレス */
+    private final String spacePilotIP;
+
+    /** デバイスサーバのポート番号 */
+    private final int libertyPort;
+
+    /** SpacePilotサーバのポート番号 */
+    private final int spacePilotPort;
+
+    /** 視点センサのデバイス番号 */
+    private final int viewpointSensor;
+
+    /** スタイラスのデバイス番号 */
+    private final int stylus;
+
+    /** ディスプレイ表示モード */
+    private final Mode displayMode;
+
+    /**
+     * ディスプレイ表示モード管理する。
+     */
+    public enum Mode {
+        /** z800 HMD用モード *//** z800 HMD用モード */
+        Z800(true,800,600),
+        /**3Dプロジェクター用モード*/
+        STEREO_PROJECTOR(true,800,600),
+        /** Youtubeサイドバイサイド動画撮影用モード */
+        YOUTUBE_SIDE_BY_SIDE(false,800,600),
+        /**VIVE用モード(2160×1200)*/
+        VIVE(false,2160,1200),
+        /** 800×600ウィンドウ用モード */
+        WINDOW_800_600(false,800,600),
+        /** 1400×1050ウィンドウ用モード */
+        WINDOW_1400_1050(false,1400,1050),
+        /** 2160×1200ウィンドウ用モード */
+        WINDOW_2160_1200(false, 2160, 1200);
+        
+
+        /**
+         * 設定ファイルから読み込んだ情報からモード分けを行う。
+         * @param str 設定ファイルから読み込んだ文字列。
+         * @return ディスプレイ表示モード。
+         */
+        static Mode create(String str){
+            Mode displayMode = null;
+            
+            if(str.equals ("z800") ){
+                displayMode = Z800;
+            }else if(str.equals( "stereo_projector" )){
+                displayMode = STEREO_PROJECTOR;
+            }else if(str.equals( "youtube_side_by_side" )){
+                displayMode = YOUTUBE_SIDE_BY_SIDE;
+            }else if(str.equals( "vive" )){
+                displayMode = VIVE;
+            }else if(str.equals( "window_800_600" )){
+                displayMode = WINDOW_800_600;
+            }else if(str.equals("window_1400_1050")){
+                displayMode = WINDOW_1400_1050;
+            }
+            return displayMode;
+        }
+
+        private boolean stereo;
+        private int width;
+        private int height;
+        /**
+         * シーケンシャルステレオ表示の設定とウィンドウサイズの設定を行う。
+         * @param stereo trueでシーケンシャルステレオ表示。
+         * @param width  ウィンドウの幅
+         * @param height ウィンドウの高さ
+         */
+        Mode(boolean stereo, int width, int height){
+            this.stereo=stereo;
+            this.width=width;
+            this.height=height;
+        }
+
+        
+        /**
+         * ディスプレイ表示モードのシーケンシャルステレオ表示の状態を取得。
+         * @return ディスプレイ表示モードのシーケンシャルステレオ表示の状態。
+         */
+        public boolean isStereo(){
+            return stereo;
+        }
+
+        /**
+         * ウィンドウの幅を取得。
+         * @return ウィンドウの幅
+         */
+        public int getWidth(){
+            return width;
+        }
+        
+        /**
+         * ウィンドウの高さを取得。
+         * @return ウィンドウの高さ。
+         */
+        public int getHeight(){
+            return height;
+        }
+        
+    }
+
+    /**
+     * シーケンシャルステレオ表示の設定とDeviceClientの各設定を指定するコンストラクタ。
+     * @param stereo シーケンシャルステレオ表示を有効にする場合はtrue。
+     * @param libertyIP デバイスサーバのIPアドレス。
+     * @param libertyPort デバイスサーバのポート番号。
+     * @param viewpointSensor 視点センサのデバイス番号。
+     * @param stylus スタイラスのデバイス番号。
+     * @param displayMode ディスプレイ表示モード。
+     */
+    private Config(boolean stereo, String libertyIP, String spacePilotIP, int libertyPort, int spacePilotPort, int viewpointSensor, int stylus, Mode displayMode) {
+        this.stereo = stereo;
+        this.libertyIP = libertyIP;
+        this.spacePilotIP = spacePilotIP;
+        this.libertyPort = libertyPort;
+        this.spacePilotPort = spacePilotPort;
+        this.viewpointSensor = viewpointSensor;
+        this.stylus = stylus;
+        this.displayMode = displayMode;
+    }
+
+    /**
+     * シーケンシャルステレオ表示設定の取得。
+     * @return シーケンシャルステレオ表示が有効の場合はtrue。
+     */
+    public boolean isStereo() {
+        return stereo;
+    }
+
+    /**
+     * デバイスサーバのIPアドレス設定の取得。
+     * @return デバイスサーバのIPアドレス。
+     */
+    public String getLibertyIP() {
+        return libertyIP;
+    }
+
+    /**
+     * SpacePilotサーバのIPアドレス設定の取得。
+     * @return デバイスサーバのIPアドレス。
+     */
+    public String getSpacePilotIP() {
+        return spacePilotIP;
+    }
+
+    /**
+     * デバイスサーバのポート番号設定の取得。
+     * @return デバイスサーバのポート番号。
+     */
+    public int getLibertyPort() {
+        return libertyPort;
+    }
+
+    /**
+     * SpacePilotサーバのポート番号設定の取得。
+     * @return デバイスサーバのポート番号。
+     */
+    public int getSpacePilotPort() {
+        return spacePilotPort;
+    }
+    /**
+     * 視点センサのデバイス番号設定の取得。
+     * @return 視点センサのデバイス番号。
+     */
+    public int getViewpointSensor() {
+        return viewpointSensor;
+    }
+
+    /**
+     * スタイラスのデバイス番号設定の取得。
+     * @return　スタイラスのデバイス番号。
+     */
+    public int getStylus() {
+        return stylus;
+    }
+
+    /**
+     * ディスプレイ表示モードの取得。
+     * @return ディスプレイ表示モード。
+     */
+    public Mode getdisplayMode() {
+        return displayMode;
+    }
+
+    /**
+     * 指定した設定ファイルからの設定の読み込み。
+     * @param file 設定ファイル。
+     * @return 読み込んだ設定。
+     */
+    public static Config loadFile(File file) {
+        Scanner scanner = null;
+        Config config = null;
+        try {
+            // ファイルをスキャナにセット
+            scanner = new Scanner(file);
+
+            // 設定の初期化
+            Config defaultConfig = loadDefault();
+            boolean stereo = defaultConfig.isStereo();
+            String libertyIP = defaultConfig.getLibertyIP();
+            String spacePilotIP = defaultConfig.getSpacePilotIP();
+            int libertyPort = defaultConfig.getLibertyPort();
+            int spacePilotPort = defaultConfig.getSpacePilotPort();
+            int viewpointSensor = defaultConfig.getViewpointSensor();
+            int stylus = defaultConfig.getStylus();
+            Mode displayMode = defaultConfig.getdisplayMode();
+
+            // ファイルの終わりまで読み込み
+            while (scanner.hasNext()) {
+                String str = scanner.next();
+                if (str.charAt(0) == '%') {
+                    // コメントを無視
+                    scanner.nextLine();
+                    continue;
+                } else if (str.equals("libertyIP")) {
+                    libertyIP = scanner.next();
+                } else if (str.equals("spacePilotIP")) {
+                    spacePilotIP = scanner.next();
+                } else if (str.equals("libertyPort")) {
+                    libertyPort = scanner.nextInt();
+                } else if (str.equals("spacePilotPort")) {
+                    spacePilotPort = scanner.nextInt();
+                } else if (str.equals("viewpointSensor")) {
+                    viewpointSensor = scanner.nextInt();
+                } else if (str.equals("stylus")) {
+                    stylus = scanner.nextInt();
+                } else if(str.equals("displayMode")){
+                    displayMode = Mode.create(scanner.next());
+                    stereo = displayMode.isStereo();
+                }
+            }
+            config = new Config(stereo, libertyIP, spacePilotIP, libertyPort, spacePilotPort, viewpointSensor, stylus, displayMode);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(0);
+        } finally {
+            // スキャナを閉じる
+            if (scanner != null) {
+                scanner.close();
+            }
+        }
+        return config;
+    }
+
+    /**
+     * デフォルトの設定の読み込み。
+     * デフォルトの設定はステレオ表示を無効とし、
+     * DummyDeviceServerを使用することを想定した設定である。
+     * @return 読み込んだ設定。
+     */
+    public static Config loadDefault() {
+        boolean stereo = false;
+        String libertyIP = "localhost";
+        String spacePilotIP = "localhost";
+        int libertyPort = 11113;
+        int spacePilotPort = 11112;
+        int viewpointSensor = 1;
+        int stylus = 0;
+        Mode mode = Mode.WINDOW_1400_1050;
+        return new Config(stereo, libertyIP, spacePilotIP, libertyPort, spacePilotPort, viewpointSensor, stylus, mode);
+    }
+}

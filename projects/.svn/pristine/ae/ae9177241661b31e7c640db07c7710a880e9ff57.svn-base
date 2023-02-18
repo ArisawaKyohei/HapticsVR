@@ -1,0 +1,114 @@
+/*
+ * ObjCapitals.java
+ * 県庁所在地の代表点(緯度,経度)に都市名を描画する描画管理クラス
+ * Oct. 2016 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.pbl2018;
+
+import com.sun.opengl.util.j2d.TextRenderer;
+import java.awt.Font;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Scanner;
+import javax.media.opengl.GL;
+import jp.ac.muroran_it.csse.vr_skelton.Position;
+import jp.ac.muroran_it.csse.vr_skelton.ModelSpaceObject;
+
+public class ObjCapitals extends ModelSpaceObject {
+    /** Stateオブジェクト */
+    OpenDataVRSpaceState state;
+    
+    /** 都市情報 */
+    private final ArrayList<City> cities = loadFile("cities2016.csv");
+    //private final ArrayList<City> cities = loadFile("CityData.dat");
+    
+    /** 都市名描画用のテキストレンダラー */
+    TextRenderer renderer;
+    
+    //=========================================================================
+    /**
+     * コンストラクタ
+     * @param state Stateオブジェクト
+     */
+    public ObjCapitals(OpenDataVRSpaceState state){
+        this.state = state;
+        
+        // レンダリングする文字のフォント、字体、サイズを指定
+        renderer = new TextRenderer(new Font("SansSerif", Font.PLAIN, 24));
+    }
+    
+    //=========================================================================
+    /**
+     * 都市名の描画(Viewから呼び出される)
+     * @param gl GLオブジェクト。
+     */
+    @Override
+    public void drawObject(GL gl) {
+        // 都市名の描画
+        for (City city : cities) { // リスト要素を１つずつ表示
+            //都市名(描画される文字列)
+            String name = city.getName();
+
+            //都市の(x,y,z)座標
+            Position pos = city.getPosition();
+            
+            // 現在のモデルビュー行列を保存
+            gl.glPushMatrix();
+
+            // 平行移動と回転
+            gl.glTranslated(pos.getX(), pos.getY(), pos.getZ());
+            gl.glRotated( 90 , -1.0, 0.0, 0.0);
+            
+            // 都市名の描画
+            renderer.begin3DRendering();
+            renderer.setColor(1.0f, 0.5f, 0, 1.0f); // 文字色の指定
+            renderer.draw3D("."+name, 0, 0, 0, 0.01f);
+            renderer.end3DRendering();
+
+            // 保存したモデルビュー行列を復帰
+            gl.glPopMatrix();
+        }
+
+    }
+    
+    //=========================================================================
+    /**
+     * 指定したデータファイルからの都市情報群の読み込み。
+     * @param filename データファイル名。
+     * @return 読み込んだ位置情報群。
+     */
+    public static ArrayList<City> loadFile(String filename) {
+        ArrayList<City> tmpCities = new ArrayList<>();
+        Scanner scanner = null;
+        try {
+            // ファイルを開いてスキャナーにセット
+            if(filename.endsWith("csv")){
+                // CSVファイルの場合は区切り文字をコンマ(と改行)に変更
+                File file = new File(filename);
+                scanner = new Scanner(file,"SJIS");
+                scanner.useDelimiter(",|\n");
+            }else{
+                // ファイルを開いてスキャナーにセット
+                File file = new File(filename);
+                scanner = new Scanner(file);
+            }
+            
+            // ファイルの終わりまで読み込み
+            while (scanner.hasNext()) {
+                String name = scanner.next();      // 都市名
+                String latitude = scanner.next();  // 緯度
+                String longitude = scanner.next(); // 経度
+                tmpCities.add(new City(name, Double.parseDouble(latitude), Double.parseDouble(longitude)));
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            // スキャナを閉じる
+            if (scanner != null) {
+                scanner.close();
+            }
+        }
+        return tmpCities;
+    }
+}

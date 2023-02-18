@@ -1,0 +1,303 @@
+/*
+ * WPrecipitation.java
+ * 降水量を描画する描画管理クラス
+ * Oct. 2016 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.pbl2018;
+
+import com.sun.opengl.util.GLUT;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Scanner;
+import javax.media.opengl.GL;
+import jp.ac.muroran_it.csse.vr_skelton.Position;
+import jp.ac.muroran_it.csse.vr_skelton.ModelSpaceObject;
+
+public class WPrecipitation extends ModelSpaceObject{
+    /** Stateオブジェクト */
+    OpenDataVRSpaceState state;
+    
+    /** 降水量に対する棒グラフの大きさの比 */
+    private static final double PRECIPITATION = 0.5;
+
+    /** 降水量のデータのリスト --------------------------------------------------------------------------------------------------------------------------------------*/
+    private final ArrayList<City> citydata;
+    
+    /** 条件を満たしている降水量のデータのリスト */
+    //private ArrayList<Double> limitedcityprecipitation;
+
+    /** 選択中の降水量データ */
+    private City selectedcity = null;
+    
+    /** 表示する月 */
+    private int month=1;
+    
+    /** アニメーション管理コントローラー */
+    private WPSelfController ctrl;
+    private int max=1;
+
+    //=========================================================================ここ変更予定--------------------------------------------------------------------------
+    /**
+     * コンストラクタ
+     * @param state Stateオブジェクト
+     */
+    public WPrecipitation(OpenDataVRSpaceState state,ArrayList<City> city){
+        this.state = state;
+        
+        // 地震源情報をファイルから読み込み
+        //this.eqCenters = loadFile("earthquake.dat");//datファイル名を書き換える
+        
+        // 最初は条件無しなので全ての震源を含める
+        //limitedEqCenters = eqCenters;
+        
+        this.citydata=city;
+        
+        // 自己アニメーション処理を開始する
+        ctrl = new WPSelfController(state,this);
+        ctrl.start();
+    }
+    
+    //=========================================================================------------------------------------------------------------------------------------
+
+    //=========================================================================
+    /**
+     * 地震源データの描画(Viewから呼び出される)
+     * @param gl GLオブジェクト。
+     */
+    @Override
+    public void drawObject(GL gl) {
+        // モデル空間でのスタイラスの座標値を取得
+        Position stylusPosition = state.toModelSpace(state.getStylusPosition());
+
+        // 条件を満たしている震源情報を描画
+        for (City city : citydata) { //←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+            // 震源を表現する球の半径の設定(揺れの大きさに比例させる)
+            //double sizeOfSphere = eqCenter.getMagnitude() * TEMPERATURE;
+
+            // スタイラスに接触している震源があるかを判定
+            //Position eqPosition = eqCenter.getCoordinate().toPosition(); // 震源の座標情報
+            //boolean isStylusHit = stylusPosition.calculateDistance(eqPosition) < sizeOfSphere;
+            
+            //青のプラスチック
+            float[] ambientOfCube = new float[] {1.0f, 0.0f, 0.0f, 1.0f};  //環境光
+            float[] diffuseOfCube = new float[] {0.0f, 0.0f, 0.5f, 1.0f};  //拡散光
+            float[] specularOfCube = new float[] {0.7f, 0.6f, 0.6f, 1.0f}; //鏡面光
+            float shininessOfCube = 0.25f;  //鏡面係数
+            if (city == selectedcity) { //←←←←←←←←←←←←←←←←←←←←←←←←
+                ambientOfCube = new float[] {1.0f, 1.0f, 0.0f, 1.0f};     // 選択中の震源は黄色
+            //} else if (isStylusHit) {
+            //    ambientOfCube = new float[] {0.0f, 1.0f, 0.0f, 1.0f};     // スタイラスと接触している震源は緑色
+            }
+
+            // 震源の描画
+            drawPrecipitation(gl, city, month, ambientOfCube, diffuseOfCube, specularOfCube, shininessOfCube);
+        }
+    }
+    
+    //=========================================================================
+    /**
+     * 震源情報を球と線で描画。
+     * @param gl GLオブジェクト。
+     * @param eqCenter 震源情報。
+     * @param ambient 球の反射特性。
+     */
+    private void drawPrecipitation(GL gl, City city, int month, float[] ambient,  float[] diffuse, float[] specular, float shininess) {
+        // メルカトル図表上の震源座標値を取得
+        //Coordinate eqCenterCoord = city.getCoordinate();
+        Position cityPosition = city.getPosition();
+        // メルカトル図表上の震央座標値を取得
+        //Position epicenterPosition = new Coordinate(eqCenterCoord.getLatitude(), eqCenterCoord.getLongitude(), 0).toPosition();
+        // 現在のモデルビュー行列を保存
+        gl.glPushMatrix();
+        // GLの座標系を震央座標値に移動
+        gl.glTranslated(cityPosition.getX(),cityPosition.getY(),cityPosition.getZ());
+        // 回転
+        gl.glRotated(-90.0, 1.0, 0.0, 0.0);
+        // 立方体を描画
+        new GLUT().glutSolidCube(0.3f);
+        //５０mmごとに立方体を積み重ねる
+        //---------------------------------------------------------------------------------------------------------------------------------
+        int i;
+        i=0;
+        int t;
+        t=0;
+        while(i<city.getPrecipitationlist().get(month-1)){
+            gl.glTranslated(+0,+0,+0.3*t);
+            new GLUT().glutSolidCube(0.3f);
+            i=i+50;
+            t++;
+        }
+        //----------------------------------------------------------------------------------------------------------------------------------
+
+        // 現在のモデルビュー行列を保存
+        gl.glPushMatrix();
+
+    }
+
+    //=========================================================================
+    /**
+     * 選択中の震源情報の取得。
+     * @return 選択中の震源情報。選択中の震源情報がない場合はnull。
+     */
+    public synchronized City getSelectedcity() {
+        return selectedcity;
+    }
+
+    //=========================================================================
+    /**
+     * モデル空間で指定した座標値に最も近い震源情報を選択
+     * @param position 座標値。
+     */
+    /*public void selectNearestEqCenter(Position position) {
+        // スタイラスに最も近い震源情報の座標値を取得
+        EqCenter nearestEqCenter = getNearestEqCenter(position);
+        Position nearestPosition = nearestEqCenter.getCoordinate().toPosition();
+
+        // スタイラスと震源情報が接触していたらその震源情報を選択
+        EqCenter selectEqCenter = null;
+        double radius = nearestEqCenter.getMagnitude() * PRECIPITATION;
+        if (position.calculateDistance(nearestPosition) < radius) {
+            selectEqCenter = nearestEqCenter;
+        }
+        selectEqCenter(selectEqCenter);
+    }*/
+    
+    //=========================================================================
+    /**
+     * モデル空間で指定した座標値に最も近い震源情報の取得。
+     * @param position 座標値。
+     * @return 指定した座標値に最も近い震源情報。
+     */
+    /*private EqCenter getNearestEqCenter(Position position) {
+        EqCenter nearestEqCenter = null;
+        double minDistance = Double.MAX_VALUE;
+        for (EqCenter eq : eqCenters) {
+            // 震源位置をメルカトル図表上の座標値に変換
+            Position eqCenterPosition = eq.getCoordinate().toPosition();
+            // 指定した座標値との間の距離を算出
+            double distance = position.calculateDistance(eqCenterPosition);
+            // 指定した座標値に最も近い震源情報を更新
+            if (distance < minDistance) {
+                nearestEqCenter = eq;
+                minDistance = distance;
+            }
+        }
+        return nearestEqCenter;
+    }*/
+
+    //=========================================================================
+    /**
+     * 震源情報の選択。
+     * @param target 選択する震源情報。何も選択しない場合はnull。
+     */
+    /*private void selectEqCenter(EqCenter target) {
+        for (EqCenter eq : eqCenters) {
+            if (eq == target) {
+                selectedEqCenter = target;
+                return;
+            }
+        }
+        selectedEqCenter = null;
+    }*/
+    
+    //=========================================================================
+    /**
+     * 指定された震源データの情報を取得。
+     * @param eqCenter 震源データ
+     * @return 指定された震源データの情報
+     */
+    /*public String[] getSelectedEqCenterInfo(EqCenter eqCenter){
+        if (eqCenter != null) {
+            Coordinate coordinate = eqCenter.getCoordinate();
+            Time time = eqCenter.getTime();
+            // 描画する震源情報を表す文字列のリストを取得
+            String[] strings ={
+                "   (経度,緯度,深度(km))","=( " + coordinate.getLongitude() +
+                    " , " + coordinate.getLatitude() +
+                    " , " + coordinate.getAltitude()*(-1) + " )",
+                "日付: " + time.getYear() + "年" + time.getMonth() + "月" + time.getDay()+ "日",
+                "発生時刻: " + time.getHour() + "時" + ( 10 > time.getMin() ? "0" : "" ) + time.getMin() + "分" + ( 10 > time.getSec() ? "0" : "" ) + time.getSec()+"秒",
+                "マグニチュード: " + eqCenter.getMagnitude()
+            };
+            
+            String[] strings ={"(Longitude,Latitude,Altitude) =  " + coordinate.getLongitude(),
+                "Latitude: " + coordinate.getLatitude(),
+                "Altitude: " + coordinate.getAltitude(),
+                "Date: " + time.getYear() + "/" + time.getMonth() + "/" + time.getDay(),
+                "Time: " + time.getHour() + ":" + time.getMin() + "′" + time.getSec(),
+                "Magnitude: " + eqCenter.getMagnitude()};
+            
+            return strings;
+        }
+        // リストを文字配列として返す
+        return null;
+    }*/
+
+    //=========================================================================
+    /**
+     * アニメーション状態を返す
+     * @return アニメーション中かどうかのフラグ
+     */
+    public boolean isAnimationRunning() {
+        return ctrl.isAnimationRunning();
+    }
+
+    //=========================================================================
+    /**
+     * 指定された震源データの情報を取得。
+     * @param flag アニメーション状態 true...動作/false...停止
+     */
+    public void setAnimationFlag(boolean flag) {
+        ctrl.setAnimationFlag(flag);
+        
+    }
+
+    //=========================================================================
+    /**
+     * 表示震度の上限を指定
+     * @param max 範囲上限
+     */
+     public void setMax(int max){
+         this.max = max;
+     }
+     
+    //=========================================================================
+    /**
+     * 表示震度の上限を取得
+     * @return max 範囲上限
+     */
+     public int getMax(){
+         return max;
+     }
+    
+    //=========================================================================
+    /**
+     * 指定範囲(0-7)の震度を持ったデータからなるリスト返す
+     * @param min 範囲下限(より大きい)
+     * @param max 範囲上限(以下)
+     */
+    /*public void setCondition(int min, int max){
+        // 範囲が指定されていないなら
+        if(min < 0 || min >= 7 || max < 0 || max > 7){
+            limitedEqCenters = eqCenters;
+            setMax(7);
+            return;
+        }
+        
+        limitedEqCenters = new ArrayList<>();
+        for(EqCenter eq : eqCenters){
+            if(min <eq.getMagnitude() && max >= eq.getMagnitude()){
+                limitedEqCenters.add(eq);
+            }
+        }
+    }*/
+    
+    public int getmonth(){
+        return month;
+    }
+    
+    public void setmonth(int month){
+        this.month=month;
+    }
+}

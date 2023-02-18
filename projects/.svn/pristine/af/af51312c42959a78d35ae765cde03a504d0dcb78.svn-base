@@ -1,0 +1,214 @@
+/*
+ * DeviceView.java
+ * 
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.dummydeviceserver;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.border.TitledBorder;
+
+/**
+ * デバイス状態の内容を表示するビュー。
+ */
+public class DeviceView extends JPanel {
+    /** このビューで表示するデバイス状態 */
+    private final DeviceState state;
+
+    /** x座標値を表示するラベル */
+    private final JLabel xLabel;
+
+    /** y座標値を表示するラベル */
+    private final JLabel yLabel;
+
+    /** z座標値を表示するラベル */
+    private final JLabel zLabel;
+
+    /** x軸周りの回転量を表示するラベル */
+    private final JLabel pXLabel;
+
+    /** y軸周りの回転量を表示するラベル */
+    private final JLabel pYLabel;
+
+    /** z軸周りの回転量を表示するラベル */
+    private final JLabel pZLabel;
+
+    /** 位置操作のステップ幅を表示するラベル */
+    private final JLabel positionStepLabel;
+
+    /** 姿勢操作のステップ幅を表示するラベル */
+    private final JLabel postureStepLabel;
+
+    /** 位置表示パネル */
+    private final JPanel positionPanel;
+
+    /** 姿勢表示パネル */
+    private final JPanel posturePanel;
+
+    /**
+     * デバイス名とデバイス状態を指定するコンストラクタ。
+     * @param deviceName デバイス名。
+     * @param positionKey 位置操作キー。
+     * @param postureKey 姿勢操作キー。
+     * @param state デバイス状態。
+     */
+    public DeviceView(String deviceName, String positionKey, String postureKey, DeviceState state) {
+        this.state = state;
+
+        setBorder(new TitledBorder(deviceName));
+        setLayout(new GridLayout(2, 1));
+
+        // ラベルを生成
+        xLabel = new JLabel(String.format("%.2f", state.getX()));
+        yLabel = new JLabel(String.format("%.2f", state.getY()));
+        zLabel = new JLabel(String.format("%.2f", state.getZ()));
+        pXLabel = new JLabel(String.format("%.2f", state.getPX()));
+        pYLabel = new JLabel(String.format("%.2f", state.getPY()));
+        pZLabel = new JLabel(String.format("%.2f", state.getPZ()));
+        positionStepLabel = new JLabel(String.format("%.2f", state.getPositionStep()));
+        postureStepLabel = new JLabel(String.format("%.2f", state.getPostureStep()));
+
+        // ラベルを内包するパネルを生成
+        positionPanel = createJPanel(xLabel, yLabel, zLabel, positionStepLabel);
+        positionPanel.setBorder(new TitledBorder("Position(" + positionKey + ")"));
+        posturePanel = createJPanel(pXLabel, pYLabel, pZLabel, postureStepLabel);
+        posturePanel.setBorder(new TitledBorder("Posture(" + postureKey + ")"));
+
+        // 各パネルを自身に追加
+        add(positionPanel);
+        add(posturePanel);
+
+        setPreferredSize(new Dimension(120, 300));
+        setSize(120, 300);
+
+        state.addDeviceEventListener(new DeviceEventListener() {
+            @Override
+            public void postureStepChanged(DeviceState source, double step, long time) {
+                updatePostureLabels();
+                repaint();
+            }
+
+            @Override
+            public void positionStepChanged(DeviceState source, double step, long time) {
+                updatePositionLabels();
+                repaint();
+            }
+
+            @Override
+            public void positionChanged(DeviceState source, double x, double y, double z, long time) {
+                updatePositionLabels();
+                repaint();
+            }
+
+            @Override
+            public void postureChanged(DeviceState source, double x, double y, double z, long time) {
+                updatePostureLabels();
+                repaint();
+            }
+
+            @Override
+            public void buttonPressed(DeviceState source, int button, long time) {
+            }
+
+            @Override
+            public void buttonReleased(DeviceState source, int button, long time) {
+            }
+        });
+    }
+
+    /**
+     * 指定したラベルを内包するパネルの生成。
+     * @param xLabel xラベル。
+     * @param yLabel yラベル。
+     * @param zLabel zラベル。
+     * @param stepLabel ステップ幅ラベル。
+     * @return 各ラベルを内包するパネル。
+     */
+    private static JPanel createJPanel(JLabel xLabel, JLabel yLabel, JLabel zLabel, JLabel stepLabel) {
+        JPanel panel = new JPanel();
+        GridBagLayout gridbag = new GridBagLayout();
+        panel.setLayout(gridbag);
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.NONE;
+
+        addLabelsPair(panel, new JLabel("X:"), xLabel, gridbag, c);
+        addLabelsPair(panel, new JLabel("Y:"), yLabel, gridbag, c);
+        addLabelsPair(panel, new JLabel("Z:"), zLabel, gridbag, c);
+        addLabelsPair(panel, new JLabel("step:"), stepLabel, gridbag, c);
+        return panel;
+    }
+
+    /**
+     * 状態表示ラベルを指定したパネルに追加。
+     * @param panel パネル。
+     * @param nameLabel 状態の名前表示のためのラベル。
+     * @param valLabel 状態の値表示のためのラベル。
+     * @param gridbag 使用するグリッドバッグレイアウト。
+     * @param c グリッドバッグレイアウトの設定に使用する定数群。
+     */
+    private static void addLabelsPair(JPanel panel, JLabel nameLabel, JLabel valLabel, GridBagLayout gridbag, GridBagConstraints c) {
+        c.weightx = 1.0;
+        c.gridwidth = GridBagConstraints.RELATIVE;
+        gridbag.setConstraints(nameLabel, c);
+        panel.add(nameLabel);
+
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        gridbag.setConstraints(valLabel, c);
+        panel.add(valLabel);
+    }
+
+    /**
+     * 位置表示の更新。
+     */
+    public void updatePositionLabels() {
+        xLabel.setText(String.format("%.2f", state.getX()));
+        yLabel.setText(String.format("%.2f", state.getY()));
+        zLabel.setText(String.format("%.2f", state.getZ()));
+        positionStepLabel.setText(String.format("%.2f", state.getPositionStep()));
+    }
+
+    /**
+     * 姿勢表示の更新。
+     */
+    public void updatePostureLabels() {
+        pXLabel.setText(String.format("%.2f", state.getPX()));
+        pYLabel.setText(String.format("%.2f", state.getPY()));
+        pZLabel.setText(String.format("%.2f", state.getPZ()));
+        postureStepLabel.setText(String.format("%.2f", state.getPostureStep()));
+    }
+
+    /**
+     * 位置表示パネル文字色の設定。
+     * @param color 文字色。
+     */
+    public void setPositionLabelsColor(Color color) {
+        for (Component c : positionPanel.getComponents()) {
+            c.setForeground(color);
+        }
+    }
+
+    /**
+     * 姿勢表示パネル文字色の設定。
+     * @param color 文字色。
+     */
+    public void setPostureLabelsColor(Color color) {
+        for (Component c : posturePanel.getComponents()) {
+            c.setForeground(color);
+        }
+    }
+
+    /**
+     * 関連づけられたデバイス状態の取得。
+     * @return デバイス状態。
+     */
+    public DeviceState getState() {
+        return state;
+    }
+}

@@ -1,0 +1,110 @@
+/*
+ * DeviceEventSender.java
+ * 
+ * Oct. 2010 by Muroran Institute of Technology
+ */
+package jp.ac.muroran_it.csse.dummydeviceserver;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+
+/**
+ * デバイスイベントの配信を行うDeviceEventListener実装。
+ */
+public class DeviceEventSender implements DeviceEventListener {
+    /** 配信先ソケットチャネル */
+    private final SocketChannel socket;
+
+    /** 配信先ソケットチャネルの出力ストリーム */
+    private final ByteBuffer buffer;
+
+    /**
+     * イベント配信先ソケットチャネルを指定するコンストラクタ。
+     * @param socket 配信先ソケットチャネル。
+     */
+    public DeviceEventSender(SocketChannel socket) {
+        this.socket = socket;
+        this.buffer = ByteBuffer.allocateDirect(64);
+    }
+
+    @Override
+    public void buttonPressed(DeviceState source, int button, long time) {
+        try {
+            buffer.clear();
+            buffer.put((byte) 0);
+            buffer.put((byte) button);
+            buffer.putLong(time);
+            buffer.flip();
+            socket.write(buffer);
+        } catch (IOException ex) {
+            source.removeDeviceEventListener(this);
+            try {
+                socket.close();
+            } catch (IOException ex1) {
+            }
+        }
+    }
+
+    @Override
+    public void buttonReleased(DeviceState source, int button, long time) {
+        try {
+            buffer.clear();
+            buffer.put((byte) 1);
+            buffer.put((byte) button);
+            buffer.putLong(time);
+            buffer.flip();
+            socket.write(buffer);
+        } catch (IOException ex) {
+            source.removeDeviceEventListener(this);
+            try {
+                socket.close();
+            } catch (IOException ex1) {
+            }
+        }
+    }
+
+    @Override
+    public void positionChanged(DeviceState source, double x, double y, double z, long time) {
+        try {
+            buffer.clear();
+            buffer.put((byte) 2);
+            buffer.putDouble(x).putDouble(y).putDouble(z);
+            buffer.putLong(time);
+            buffer.flip();
+            socket.write(buffer);
+        } catch (IOException ex) {
+            source.removeDeviceEventListener(this);
+            try {
+                socket.close();
+            } catch (IOException ex1) {
+            }
+        }
+    }
+
+    @Override
+    public void postureChanged(DeviceState source, double x, double y, double z, long time) {
+        try {
+            buffer.clear();
+            buffer.put((byte) 3);
+            buffer.putDouble(x).putDouble(y).putDouble(z);
+            buffer.putLong(time);
+            buffer.flip();
+            socket.write(buffer);
+        } catch (IOException ex) {
+            source.removeDeviceEventListener(this);
+            try {
+                socket.close();
+            } catch (IOException ex1) {
+            }
+        }
+    }
+
+    @Override
+    public void postureStepChanged(DeviceState source, double step, long time) {
+    }
+
+    @Override
+    public void positionStepChanged(DeviceState source, double step, long time) {
+    }
+}

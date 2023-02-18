@@ -1,0 +1,211 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package jp.ac.muroran_it.csse.pbl2018;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+/**
+ *
+ * @author j17024059
+ *画面に表示するメニュー。
+ */
+public class MENU {
+    
+    /** 名前 */
+    private final String menuName;
+    
+    /** 親メニュー */  
+    private MENU superMenu = null;
+    
+    /** 前のメニュー */
+    private MENU previousMenu = null;
+    /** 次のメニュー */
+    private MENU nextMenu = null;
+    /**
+    子メニュー
+    */
+    private MENU[] subMenu = new MENU[0];
+    /**
+    選択されている場合は
+    true */
+    private boolean isSelected = false;
+    /**
+    メニューアクション
+    */
+    private ActionListener menuAction = null;
+    /**
+    *
+    メニューの名前を指定するコンストラクタ。
+    *@param menuName
+    メニューの名前。
+    */
+    private MENU(String menuName){
+    this.menuName = menuName;
+    }
+    /**
+    *
+    メニューの生成。
+    * @param state
+    指定する状態。
+    * @return
+    生成したメニュー。
+    */
+    public static MENU create(final OpenDataVRSpaceState state){
+        MENU rootMenu = new MENU("rootMenu");
+        rootMenu.isSelected = true;
+        MENU menu1 = new MENU("気候区分");
+        MENU menu2 = new MENU("年平均気温");
+        MENU menu3 = new MENU("年降水量");
+        MENU subMenu21 = new MENU("subMenu21");
+        subMenu21.menuAction = new ActionListener(){
+            /**
+             *
+             ティーポットの色を青に変更。
+             * @param e アクションイベント。
+             */
+             @Override
+        public void actionPerformed(ActionEvent e) {
+            //ティーポットを青にする
+          
+           }
+        };
+    
+        MENU subMenu22 = new MENU("subMenu22");
+        subMenu22.menuAction = new ActionListener(){
+            /** 
+            *
+            ティーポットの色を赤に変更。
+            * @param e アクションイベント。
+            */
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            
+            }
+        };
+        
+        rootMenu.addMenu(menu1);
+        rootMenu.addMenu(menu2);
+        menu2.addMenu(subMenu21);
+        menu2.addMenu(subMenu22);
+        
+        return rootMenu;
+    }
+    
+    /**
+    *
+    メニューの追加。
+    * @param subMenu 追加するサブメニュー。
+    */
+    private void addMenu(MENU subMenu){
+        MENU[] newSubMenu = new MENU[this.subMenu.length + 1];
+        for (int i = 0; i < this.subMenu.length; ++i){
+            newSubMenu[i] = this.subMenu[i];
+        }
+        newSubMenu[this.subMenu.length] = subMenu;
+        
+        newSubMenu[this.subMenu.length].superMenu = this;
+        if (newSubMenu.length > 1){
+            newSubMenu[newSubMenu.length - 2].nextMenu = newSubMenu[newSubMenu.length - 1];
+            newSubMenu[newSubMenu.length - 1].previousMenu = newSubMenu[newSubMenu.length - 2];
+        }
+        this.subMenu = newSubMenu;
+    }
+    
+    /**
+    *
+    選択されているメニューの取得。
+    * @return
+    選択されているもっとも枝葉のメニュー。
+    */
+    public MENU getSelectedMenu() {
+        MENU[] subMenus = this.getSubMenus();
+        for (int i = 0; i < subMenus.length; ++i) {
+            if (subMenus[i].isSelected) {
+                return subMenus[i].getSelectedMenu();
+            }
+        }
+        return this;
+    }
+    
+    /**
+    *
+    前のメニューに移動。
+    * @param menu 移動前のメニュー。
+    */
+    public static void goPreviousMenu(MENU menu) {
+        if (menu.previousMenu != null) {
+            menu.isSelected = false;
+            menu.previousMenu.isSelected = true;
+        }
+    }
+    
+    /**
+    *
+    次のメニューに移動。
+    * @param menu 移動前のメニュー。
+    */
+    public static void goNextMenu(MENU menu) {
+        if (menu.nextMenu != null) {
+            menu.isSelected = false;
+            menu.nextMenu.isSelected = true;
+        }
+    }
+    /**
+    *
+    子メニューに移動。
+    * @param menu 移動前のメニュー。
+    */
+    public static void goSubMenu(MENU menu) {
+       if (menu.getSubMenus().length != 0) {
+           menu.getSubMenus()[0].isSelected = true;
+        }
+    }
+    /**
+    *
+    親メニューに移動。
+    * @param menu 移動前のメニュー。
+    */
+    public static void goSuperMenu(MENU menu) {
+        if (menu.superMenu != null) {
+            menu.isSelected = false;
+        }
+    }
+    /**
+    *
+    メニューの選択状態の取得。
+    * @return
+    メニューが選択されていた場合はtrue。
+    */
+    public boolean isSelected() {
+        return isSelected;
+    }
+    /**
+    *
+    子メニューの取得。
+    * @return 子メニュー。
+    */
+    public MENU[] getSubMenus() {
+        return subMenu;
+    }
+    /**
+    *
+    メニューの名前の取得。
+    * @return
+    メニューの名前。
+    */
+    public String getMenuName(){
+        return menuName;
+    }
+    /**
+    *
+    メニューに登録してあるアクションを実行。
+    */
+    public void doMenuAction(){
+        if (menuAction != null){
+            menuAction.actionPerformed(null);
+            }
+        }
+    }
